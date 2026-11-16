@@ -135,7 +135,9 @@ def _read_cached(cache_dir: Path, source: str, cfg_data: dict) -> dict[str, pd.D
     frames = {}
     for sym in cfg_data["symbols"]:
         if source == "binance":
-            path = cache_dir / "binance" / cfg_data["interval"] / f"{sym}{cfg_data['quote']}.parquet"
+            path = (
+                cache_dir / "binance" / cfg_data["interval"] / f"{sym}{cfg_data['quote']}.parquet"
+            )
         else:
             path = cache_dir / "coinmetrics" / f"{sym}.parquet"
         if not path.exists():
@@ -245,7 +247,14 @@ def load_market(cfg: dict, *, seed_offset: int = 0) -> tuple[dict[str, pd.DataFr
         "validation": log.records,
         "validation_counts": {
             check: log.count(check)
-            for check in ("duplicates", "bad_prices", "gaps", "ohlc_inconsistent", "zero_volume", "outliers")
+            for check in (
+                "duplicates",
+                "bad_prices",
+                "gaps",
+                "ohlc_inconsistent",
+                "zero_volume",
+                "outliers",
+            )
         },
     }
     return clean, info

@@ -143,7 +143,9 @@ def download_symbol(
                 d += timedelta(days=1)
             df = pd.concat(days) if days else None
         if df is None:
-            logger.info("%s %s %d-%02d: no archive (not listed yet?)", symbol, interval, year, month)
+            logger.info(
+                "%s %s %d-%02d: no archive (not listed yet?)", symbol, interval, year, month
+            )
             continue
         if complete:
             df.to_parquet(path)
