@@ -24,6 +24,17 @@ from overfitlab.diagnostics.trials import effective_trials
 from overfitlab.diagnostics.walkforward import split_decay, walk_forward
 
 
+def derive_seed(seed: int, stream: int) -> int:
+    """An independent seed for sub-stream ``stream`` of a run seeded with ``seed``.
+
+    Worlds in the Monte Carlo are seeded with consecutive integers. Using ``seed + 1``
+    for the bootstrap of world w would hand it the very random stream that generates
+    world w + 1; hashing ``(seed, stream)`` through ``SeedSequence`` keeps every stream
+    statistically independent of every other.
+    """
+    return int(np.random.SeedSequence([int(seed), int(stream)]).generate_state(1)[0])
+
+
 def one_sided_pvalues(moments: dict, n_obs: int) -> np.ndarray:
     """p-value of H0: true Sharpe <= 0 for each variant (see ``sharpe_pvalue``).
 
@@ -105,7 +116,7 @@ def diagnose(
     # Effective number of trials and the Deflated Sharpe Ratio under each estimate.
     tcfg = dcfg["trials"]
     methods = tuple(neff_methods if neff_methods is not None else tcfg["methods"])
-    neff = effective_trials(x, methods, n_sim=tcfg["n_sim"], seed=seed + 2)
+    neff = effective_trials(x, methods, n_sim=tcfg["n_sim"], seed=derive_seed(seed, 2))
     out["neff"] = neff
     primary = tcfg["primary"] if tcfg["primary"] in neff else methods[0]
     dsr = {}
@@ -135,7 +146,7 @@ def diagnose(
         x,
         n_boot=n_boot or bcfg["n_boot"],
         mean_block=mean_block or bcfg["mean_block"],
-        seed=seed + 1,
+        seed=derive_seed(seed, 1),
     )
     out["snooping"] = {
         "rc_p": snoop.rc_pvalue,

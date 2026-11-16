@@ -60,6 +60,7 @@ def setup_style() -> None:
             "figure.dpi": 100,
             "savefig.dpi": 160,
             "savefig.bbox": "tight",
+            "figure.constrained_layout.use": True,
         }
     )
 
@@ -134,7 +135,7 @@ def _survival_panel(ax, diag: dict, title: str) -> None:
 def _sharpe_hist_panel(ax, sharpe: np.ndarray, live: np.ndarray, diag: dict, title: str) -> None:
     ax.hist(sharpe[live], bins=70, color=BLUE, alpha=0.85, linewidth=0)
     naive = 1.645 / np.sqrt(diag["years"])
-    _vline(ax, naive, "naive 5%\ncut-off", y=0.97, ha="left")
+    _vline(ax, naive, "naive 5%\ncut-off", y=0.97, ha="right")
     _best_vs_luck(ax, diag["sharpe"]["best_annual"], diag["dsr_primary"]["sr0_annual"])
     ax.set_title(title)
     ax.set_xlabel("Annualised Sharpe ratio")
@@ -634,5 +635,4 @@ def fig_e5(results: dict, outdir: Path) -> list[Path]:
     ax.set_ylabel("p-value")
     ax.set_title("Data-snooping p-values against the block length")
     ax.legend(loc="center right")
-    fig.tight_layout()
     return [_save(fig, outdir, "e5_robustness.png")]

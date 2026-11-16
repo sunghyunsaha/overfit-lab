@@ -16,7 +16,7 @@ from overfitlab.diagnostics.bootstrap import reality_check_and_spa
 from overfitlab.diagnostics.cv import cpcv_select_best, purged_kfold
 from overfitlab.diagnostics.pbo import cscv
 from overfitlab.diagnostics.sharpe import sharpe_ratio
-from overfitlab.experiments.common import cpcv_summary, diagnose, save_results
+from overfitlab.experiments.common import cpcv_summary, derive_seed, diagnose, save_results
 from overfitlab.experiments.e3_real import load_universe
 from overfitlab.reporting.render import md_table
 
@@ -91,7 +91,9 @@ def run(cfg: dict) -> dict:
 
     block_rows = []
     for mb in ecfg["mean_blocks"]:
-        r = reality_check_and_spa(net, dcfg["bootstrap"]["n_boot"], float(mb), seed=seed + 50)
+        r = reality_check_and_spa(
+            net, dcfg["bootstrap"]["n_boot"], float(mb), seed=derive_seed(seed, 50)
+        )
         block_rows.append({"mean_block": mb, "rc_p": r.rc_pvalue, "spa_p": r.spa_consistent})
 
     lag_cfg = deep_merge(cfg, {"execution_lag": cfg["execution_lag"] + 1})
@@ -126,6 +128,12 @@ def run(cfg: dict) -> dict:
         "subperiods": subperiods,
         "block_length": block_rows,
         "lag": {"base": base, "lagged": lagged, "lag_bars": lag_cfg["execution_lag"]},
+        "subperiod_holm_text": (
+            "no sub-period has a single Holm survivor"
+            if max(p["survivors"]["holm"] for p in subperiods) == 0
+            else f"no sub-period has more than {max(p['survivors']['holm'] for p in subperiods):,} "
+            "Holm survivors"
+        ),
         "ranges": {
             "pbo_min": min(r["pbo"] for r in cscv_rows),
             "pbo_max": max(r["pbo"] for r in cscv_rows),

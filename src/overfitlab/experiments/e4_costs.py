@@ -36,11 +36,18 @@ def run(cfg: dict) -> dict:
         ]
         for d in levels
     ]
+    holm = [d["survivors"]["holm"] for d in levels]
+    if min(holm) == max(holm):
+        holm_text = f"there are {holm[0]:,} Holm survivors at every fee level"
+    else:
+        holm_text = f"Holm survivors range from {min(holm):,} to {max(holm):,} across fee levels"
     results = {
         "data": {k: v for k, v in info.items() if k != "validation"},
         "fees_bps": list(cfg["experiments"]["e4"]["fees_bps"]),
         "levels": levels,
         "summary": {
+            "holm_text": holm_text,
+            "holm_text_cap": holm_text[0].upper() + holm_text[1:],
             "holm_min": min(d["survivors"]["holm"] for d in levels),
             "holm_max": max(d["survivors"]["holm"] for d in levels),
             "bh_at_min_fee": levels[0]["survivors"]["bh"],
