@@ -2,7 +2,8 @@
 # daily, so every diagnostic still sees one daily T x N matrix. Indicator windows are in
 # BARS, so the same grid means much shorter horizons here (5 to 250 hours).
 # Hourly bars exist only in the Binance source: `make data-hourly`, then `make hourly`.
-# Results go to reports/hourly/ and never touch the daily results or the documents.
+# Results go to reports/hourly/ and never touch the daily results. `make docs` then
+# shows them in the hourly section of README.md and REPORT.md.
 output_dir: reports/hourly
 artifacts_dir: artifacts/hourly
 render_docs: false

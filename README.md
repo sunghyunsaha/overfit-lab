@@ -61,7 +61,7 @@ make all              # E1-E5, figures, README.md and REPORT.md re-rendered from
 make data-hourly && make hourly   # optional: E3 on 1-hour Binance bars -> reports/hourly/
 ```
 
-Runs are driven by YAML (`configs/base.yaml` plus an override file) and a fixed seed, so the same config gives the same numbers. `make figures` redraws every figure from saved results without recomputing, and `make docs` re-renders the documents. The full run takes about 12 minutes on two cores and the hourly run about 2 minutes.
+Runs are driven by YAML (`configs/base.yaml` plus an override file) and a fixed seed, so the same config gives the same numbers. `make figures` redraws every figure from saved results without recomputing, and `make docs` re-renders the documents. On a two-core machine the full run takes roughly 10 to 12 minutes and the hourly run under 2.
 
 **Without `make` (for example on Windows).** Every target is one Python command, listed in the `Makefile`. After `pip install -r requirements.txt` and `pip install -e . --no-deps`:
 
