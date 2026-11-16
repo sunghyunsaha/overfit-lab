@@ -1,10 +1,10 @@
-# Exact versions this project was built and tested with (Python 3.13).
-# numpy 2.5 / scipy 1.18 need Python >= 3.12; on Python 3.11 the markers below select
-# the newest releases that still support it (see NEXT_STEPS.md: not executed in the build).
+# Exact versions this project is tested with. The full test-suite passes on
+# Python 3.11, 3.12 and 3.13 with these pins (clean virtual environments).
+# numpy 2.5 / scipy 1.18 dropped Python 3.11, so 3.11 gets the last releases that support it.
 numpy==2.5.3; python_version >= "3.12"
-numpy>=2.2,<2.5; python_version < "3.12"
+numpy==2.4.6; python_version < "3.12"
 scipy==1.18.1; python_version >= "3.12"
-scipy>=1.14,<1.18; python_version < "3.12"
+scipy==1.17.1; python_version < "3.12"
 pandas==3.0.5
 statsmodels==0.15.0
 matplotlib==3.11.2
