@@ -1,0 +1,114 @@
+# Base configuration. Every other config file is deep-merged on top of this one,
+# so a run is fully described by (base.yaml + the override file).
+seed: 20261116
+periods_per_year: 365          # crypto trades every day; diagnostics always run on daily returns
+output_dir: reports            # results JSON -> <output_dir>/results, figures -> <output_dir>/figures
+artifacts_dir: artifacts       # large matrices (git-ignored)
+n_jobs: 0                      # worker processes for Monte Carlo loops (0 = all cores)
+
+data:
+  source: auto                 # auto | binance | coinmetrics | synthetic
+  interval: 1d                 # 1d or 1h (1h strategies are aggregated to daily returns)
+  start: "2018-07-01"
+  end: null
+  cache_dir: data
+  symbols: [BTC, ETH, BNB, XRP, ADA, LTC, TRX, XLM, ETC, NEO]
+  quote: USDT                  # Binance quote asset
+  validation:
+    outlier_sigma: 12.0        # flag |log return| above this many robust sigmas
+    repair_outliers: false     # default: flag and log only, never alter real prices
+
+# Synthetic market. Used for E1/E2 and as the stand-in when no real data is cached.
+synthetic:
+  n_assets: 10
+  n_bars: 2900
+  kind: garch                  # gbm | garch
+  vol_annual: 0.80
+  garch_alpha: 0.06
+  garch_beta: 0.92
+  student_df: 6
+  asset_corr: 0.5              # weight of the common factor in the shocks
+  signal_strength: 0.0         # annualised Sharpe of an oracle that sees the hidden drift
+  signal_half_life: 20         # bars
+  drift_annual: 0.0
+
+costs:
+  fee_bps: 10.0                # per side, charged on traded notional
+  slippage_vol_mult: 0.01      # slippage per unit traded = mult x trailing daily volatility
+  slippage_window: 20          # days of history for the trailing volatility
+
+execution_lag: 1               # bars between signal and position taking effect (1 = next bar)
+
+# Strategy universe: 250 base variants per asset, x2 with the volatility-target overlay.
+universe:
+  ma_cross:
+    fast: [5, 10, 20, 50]
+    slow: [20, 50, 100, 150, 200]
+    ma_type: [sma, ema]
+    mode: [long_only, long_short]
+  tsmom:
+    lookback: [5, 10, 15, 20, 30, 40, 60, 80, 100, 120, 150, 180, 250]
+    mode: [long_only, long_short]
+  zscore_mr:
+    window: [10, 20, 40, 60, 100]
+    entry: [1.0, 1.5, 2.0, 2.5]
+    exit: [0.0, 0.5]
+    mode: [long_only, long_short]
+  donchian:
+    entry_window: [10, 20, 40, 55, 100, 150, 200]
+    exit_frac: [0.5, 1.0]
+    mode: [long_only, long_short]
+  rsi:
+    period: [7, 14, 21]
+    band: [20, 25, 30, 35]      # oversold below band, overbought above 100 - band
+    style: [reversal, trend]
+    mode: [long_only, long_short]
+  vol_target:
+    variants: [false, true]
+    target_annual: 0.40
+    window: 30
+    max_leverage: 2.0
+
+diagnostics:
+  alpha: 0.05
+  cscv_blocks: 16
+  bootstrap:
+    n_boot: 1000
+    mean_block: 10             # mean block length of the stationary bootstrap (bars)
+  cpcv:
+    n_groups: 10
+    n_test_groups: 2
+    label_horizon: 20          # bars of dependence purged before each test block
+    embargo_pct: 0.01          # fraction of the sample embargoed after each test block
+  walkforward:
+    train_bars: 730
+    test_bars: 90
+  trials:
+    primary: max_matching      # which effective-trials estimate feeds the headline DSR
+    methods: [cluster, avg_corr, eigen, max_matching]
+    n_sim: 2000
+
+experiments:
+  e1:
+    mc:
+      n_worlds: 100            # per null type
+      kinds: [gbm, garch]
+      n_assets: 2
+      n_bars: 2000
+      n_boot: 500
+      cscv_blocks: 10
+  e2:
+    strengths: [0.0, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0]
+    n_worlds: 30
+    n_assets: 2
+    n_bars: 2900
+    n_boot: 500
+    cscv_blocks: 10
+  e4:
+    fees_bps: [0, 5, 10, 15, 20, 30]
+  e5:
+    cscv_blocks: [6, 8, 10, 12, 14, 16]
+    cpcv_groups: [6, 8, 10, 12]
+    embargo_pcts: [0.0, 0.01, 0.02, 0.05]
+    mean_blocks: [5, 10, 20, 40]
+    n_subperiods: 3

@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+# downloaded market data and large matrices are never committed
+data/
+artifacts/
+reports/demo/
