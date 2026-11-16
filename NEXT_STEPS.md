@@ -7,7 +7,7 @@ What is unfinished, what is known to be imperfect, and what could be built next.
 | Item | Status | What is left |
 |---|---|---|
 | Python 3.11 | **Done.** The full test-suite, lint and `make demo` pass on Python 3.11, 3.12 and 3.13 in clean virtual environments. `requirements.txt` pins exact versions for each. | Nothing. |
-| GitHub Actions | **Running.** The workflow runs on every push, on Ubuntu with Python 3.11, 3.12 and 3.13 and on Windows with Python 3.12. The badge in the README shows the state of the latest run. | Nothing. |
+| GitHub Actions | **Done.** The workflow passed on the first push to GitHub (2026-11-16 UTC) on all four jobs: Ubuntu with Python 3.11, 3.12 and 3.13, and Windows with Python 3.12. It runs on every push, and the badge in the README shows the state of the latest run. | Nothing. |
 | Binance data | **Done, by an indirect route.** The committed results use real Binance archives, each verified against its published checksum by the project's downloader. The archives reached the downloader through a local mirror, not a direct connection, because the build machine cannot reach `data.binance.vision` (DECISIONS A1). | Run `make data-check` once on your own machine. It exercises the one thing the committed run did not: the downloader talking to the live host. |
 | Hourly data | **Done for E3.** E3 has been run on real one-hour Binance bars (REPORT section 5.6). | E4 and E5 on hourly bars (see extensions). |
 
