@@ -6,7 +6,7 @@
 
 ## Abstract
 
-We generate {{e3.n_variants:,}} variants of five classic technical trading rules on {{e3.n_assets}} crypto assets, backtest them net of costs on {{e3.net.years:.1f}} years of daily data, and ask how many remain statistically convincing once the search itself is accounted for. Tested one at a time at the 5% level, {{e3.net.survivors.naive:,}} variants ({{e3.net.survivors.naive_frac:.1%}}) look significant. After Holm's correction {{e3.net.survivors.holm:,}} remain; after Benjamini-Hochberg {{e3.net.survivors.bh:,}}. The best variant's annualised Sharpe ratio of {{e3.net.sharpe.best_annual:.2f}} is {{e3.verdict.dsr_text}} what the best of that many skill-less strategies is expected to show ({{e3.net.dsr_primary.sr0_annual:.2f}}), giving a Deflated Sharpe Ratio of {{e3.net.dsr_primary.dsr:.2f}}. Hansen's SPA test {{e3.verdict.spa_text}} the hypothesis that no variant has positive expected return (p = {{e3.net.snooping.spa_p:.2f}}), and the Probability of Backtest Overfitting is {{e3.net.pbo.pbo:.2f}}. Measured against buy-and-hold of the same coin instead of cash, {{e3.vs_buy_hold.survivors.naive:,}} variants are significant even before correction. The same tools are first validated on synthetic markets with no signal, where they should stay silent, and on markets with a planted signal, where they should not. That validation exposed two finite-sample problems in textbook recipes (section 5.1), which were fixed before any real data was analysed.
+We generate {{e3.n_variants:,}} variants of five classic technical trading rules on {{e3.n_assets}} crypto assets, backtest them net of costs on {{e3.net.years:.1f}} years of daily data, and ask how many remain statistically convincing once the search itself is accounted for. Tested one at a time at the 5% level, {{e3.net.survivors.naive:,}} variants ({{e3.net.survivors.naive_frac:.1%}}) look significant. After Holm's correction {{e3.net.survivors.holm:,}} remain; after Benjamini-Hochberg {{e3.net.survivors.bh:,}}. The best variant's annualised Sharpe ratio of {{e3.net.sharpe.best_annual:.2f}} is {{e3.verdict.dsr_text}} what the best of that many skill-less strategies is expected to show ({{e3.net.dsr_primary.sr0_annual:.2f}}), giving a Deflated Sharpe Ratio of {{e3.net.dsr_primary.dsr:.2f}}. Hansen's SPA test {{e3.verdict.spa_text}} the hypothesis that no variant has positive expected return (p = {{e3.net.snooping.spa_p:.2f}}), and the Probability of Backtest Overfitting is {{e3.net.pbo.pbo:.2f}}. Measured against buy-and-hold of the same coin instead of cash, {{e3.vs_buy_hold.survivors.naive:,}} variants are significant even before correction. The same tools are first validated on synthetic markets with no signal, where they should stay silent, and on markets with a planted signal, where they should not. That validation exposed two finite-sample problems in textbook recipes (section 5.1). Both were corrected on the evidence of the synthetic worlds alone, and the real-data results are shown with the original and the corrected versions side by side.
 
 ## 1. Introduction
 
@@ -26,7 +26,7 @@ The contribution is not a trading strategy. It is a worked demonstration, with t
 
 Source for this run: **{{e3.data.label}}**. Assets: {{e3.n_assets}} large, long-lived coins. Sample: {{e3.data.start}} to {{e3.data.end}}, {{e3.data.n_bars:,}} daily bars per asset, aligned on a common calendar.
 
-The intended primary source is Binance spot OHLCV bulk data (`data.binance.vision`), for which a downloader with checksum verification is included (`make data`). The build machine could not reach that host, so the committed results use real daily reference prices from the CoinMetrics community dataset. That source has one price per day and no intraday high or low, so Donchian channels are channels of daily closes in this run. Binance data replaces it with `make data && make all`.
+{{e3.data.note}} The downloader for the primary source verifies each archive's checksum (`data/binance.py`).
 
 Buy-and-hold over the sample, for context:
 
@@ -249,6 +249,8 @@ The practical message is the mirror image of E1: the thresholds that keep the to
 
 ![E3 Sharpe distribution](reports/figures/e3_sharpe_distribution.png)
 
+**Effect of the two corrections from section 5.1 on the real data.** With p-values from $`1 - PSR(0)`$ instead of the t-test, {{e3.net.survivors_psr.bh:,}} variants would survive Benjamini-Hochberg and {{e3.net.survivors_psr.holm:,}} would survive Holm (against {{e3.net.survivors.bh:,}} and {{e3.net.survivors.holm:,}}). With the long-run standard deviation in SPA the p-value would be {{e3.net.snooping.spa_hac_p:.2f}} (against {{e3.net.snooping.spa_p:.2f}}). For transparency about the order of work: the p-value correction was made before any real data was analysed. The change of scale in SPA was made after a first real-data run, on the evidence of the null worlds alone; it moved the real-data SPA p-value towards significance, not away from it. Neither correction changes a conclusion.
+
 **Effective number of trials and the DSR.**
 
 {{e3.tables.neff_md}}
@@ -283,7 +285,7 @@ Net returns are recomputed for fees from {{e4.summary.min_fee:g}} to {{e4.summar
 
 ![E4 cost sensitivity](reports/figures/e4_costs.png)
 
-The naive count falls from {{e4.summary.naive_at_min_fee:,}} to {{e4.summary.naive_at_max_fee:,}} and the Benjamini-Hochberg count from {{e4.summary.bh_at_min_fee:,}} to {{e4.summary.bh_at_max_fee:,}} as fees rise; the median variant's Sharpe ratio goes from {{e4.summary.median_at_min_fee:.2f}} to {{e4.summary.median_at_max_fee:.2f}}. Holm survivors range from {{e4.summary.holm_min}} to {{e4.summary.holm_max}}, the largest DSR at any fee is {{e4.summary.dsr_max:.2f}} and the smallest SPA p-value is {{e4.summary.spa_p_min:.2f}}. The best variants trade rarely, so their Sharpe ratios move little with the fee; costs mainly remove the high-turnover part of the distribution.
+The naive count falls from {{e4.summary.naive_at_min_fee:,}} to {{e4.summary.naive_at_max_fee:,}} and the Benjamini-Hochberg count from {{e4.summary.bh_at_min_fee:,}} to {{e4.summary.bh_at_max_fee:,}} as fees rise; the median variant's Sharpe ratio goes from {{e4.summary.median_at_min_fee:.2f}} to {{e4.summary.median_at_max_fee:.2f}}. At the family-wise level {{e4.summary.holm_text}}, the largest DSR at any fee is {{e4.summary.dsr_max:.2f}} and the smallest SPA p-value is {{e4.summary.spa_p_min:.2f}}. The best variants trade rarely, so their Sharpe ratios move little with the fee; costs mainly remove the high-turnover part of the distribution.
 
 ### 5.5 E5: robustness
 
@@ -311,7 +313,7 @@ The naive count falls from {{e4.summary.naive_at_min_fee:,}} to {{e4.summary.nai
 
 ![E5 robustness](reports/figures/e5_robustness.png)
 
-Across these settings PBO ranges from {{e5.ranges.pbo_min:.2f}} to {{e5.ranges.pbo_max:.2f}} with the number of blocks, the median CPCV path Sharpe ratio from {{e5.ranges.cpcv_median_min:.2f}} to {{e5.ranges.cpcv_median_max:.2f}}, and the SPA p-value from {{e5.ranges.spa_p_min:.2f}} to {{e5.ranges.spa_p_max:.2f}} with the block length. No sub-period has more than {{e5.ranges.subperiod_holm_max}} Holm survivors and the largest sub-period DSR is {{e5.ranges.subperiod_dsr_max:.2f}}. The sub-period table is the most informative. Each period has a different winner, the last column shows how little of its in-period Sharpe ratio it earned in the rest of the sample, and PBO itself varies widely between periods: it describes the sample as much as the method. The CPCV summaries are the least stable quantity here, which is a reminder that a handful of paths is a small sample.
+Across these settings PBO ranges from {{e5.ranges.pbo_min:.2f}} to {{e5.ranges.pbo_max:.2f}} with the number of blocks, the median CPCV path Sharpe ratio from {{e5.ranges.cpcv_median_min:.2f}} to {{e5.ranges.cpcv_median_max:.2f}}, and the SPA p-value from {{e5.ranges.spa_p_min:.2f}} to {{e5.ranges.spa_p_max:.2f}} with the block length. In the sample-period split {{e5.subperiod_holm_text}}, and the largest sub-period DSR is {{e5.ranges.subperiod_dsr_max:.2f}}. The sub-period table is the most informative. Each period has a different winner, the last column shows how little of its in-period Sharpe ratio it earned in the rest of the sample, and PBO itself varies widely between periods: it describes the sample as much as the method. The CPCV summaries are the least stable quantity here, which is a reminder that a handful of paths is a small sample.
 
 ## 6. Discussion
 

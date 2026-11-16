@@ -1,0 +1,93 @@
+# Interview preparation
+
+Numbers in this file are filled in by the pipeline (`make docs`). Data used for the real-data results: **REAL - CoinMetrics community daily reference prices (close-only)**.
+
+## 1. Two-minute spoken summary
+
+> "I built a framework to measure backtest overfitting: if you search thousands of strategy variants and keep the best, how much of its performance is real?
+>
+> I wrote a small vectorised backtester and generated 5,000 variants of five classic technical rules, moving-average crossovers, momentum, mean reversion, breakouts and RSI, on 10 crypto assets over about 8 years, net of fees and slippage. Every variant's daily returns go into one matrix, and all the diagnostics run on that matrix.
+>
+> I validated the tools on simulated markets with no signal, where every discovery is a false positive. That turned out to matter. Two textbook recipes failed: Bonferroni applied to Probabilistic-Sharpe-Ratio p-values gave false discoveries in up to 14% of null worlds instead of at most 5%, because in-sample skewness fakes significance for strategies that almost never trade, and Hansen's SPA test over-rejected when studentised with the long-run variance. I traced both, fixed them, and kept the originals in the output.
+>
+> On real data, 1,133 of the 5,000 variants look significant at 5% if you test them one at a time. After Benjamini-Hochberg 199 remain, and after Holm, 0. The best variant has a Sharpe of 1.41, but the best of that many skill-less strategies is expected to show 1.58, so its Deflated Sharpe Ratio is only 0.30. The probability of backtest overfitting is 0.27, and a walk-forward rule that trades each window's winner earns a Sharpe of -0.07 against 2.21 in the selection windows. Against simply holding each coin, 0 variants are significant.
+>
+> So what survives FDR control is long exposure to assets that went up, not timing skill. The main thing I learned is to test the statistical tools on data where the answer is known before trusting them on data where it is not."
+
+Practise saying this in under two minutes. If asked for one sentence: "Out of 5,000 backtests, 1,133 looked significant and 0 survived an honest correction."
+
+## 2. The 15 hardest questions
+
+**1. Your best strategy has a Sharpe of 1.41. Why is that not good?**
+With about 8 years of data an annualised Sharpe has a standard error of about one over the square root of the number of years. The best of N independent skill-less trials is expected to be about $`\sqrt{2\ln N}`$ standard errors above zero. With an effective 579 trials the paper's formula gives a luck benchmark of 1.58, and even the theoretical null benchmark is 1.10. The observed best is not significantly above either: the DSR is 0.30 with the paper's dispersion and 0.83 with the theoretical one, both below 0.95.
+
+**2. Benjamini-Hochberg leaves 199 survivors. So something is real?**
+Something has positive expected return relative to cash, yes. It is a broad effect shared by long-only trend rules on coins that rose strongly. When I subtract buy-and-hold of the same coin, the best active Sharpe is 0.33, only 5% of variants beat their coin, and 0 are significant before any correction. FDR control detected market exposure, which is real but is not skill.
+
+**3. How do you know your backtester has no lookahead bias?**
+Structurally, positions are shifted one bar before being multiplied by returns, and indicators write their value at the last bar of their window. Empirically, a test replaces every price after a cut point with a different path and asserts that all 500 variants' positions and returns up to that point are bit-for-bit identical, and that the later part did change. A second test checks the engine against a five-bar example worked by hand.
+
+**4. Why did you not use PSR p-values for the multiple-testing corrections?**
+Because they failed validation. PSR evaluates the Sharpe ratio's standard error at the estimate using the in-sample skewness. For a strategy with a handful of active days, lucky returns raise the mean and the sample skewness together, the standard error shrinks, and the p-value is far too small. In null worlds Bonferroni on those p-values made false discoveries in up to 14% of worlds; the variants responsible were active on a median of 12 bars. Under the null the correct standard error has no skewness term, so I use the classical t-test for per-variant p-values and keep PSR for reporting and for the DSR.
+
+**5. You changed Hansen's SPA test. Is that legitimate?**
+I changed the scale used to studentise, from the long-run standard deviation to the sample standard deviation, and I report both. In null worlds the long-run version rejected in up to 10% of cases against 5% for the sample version. The long-run estimate is several times noisier, and a maximum over thousands of ratios selects the under-estimates; the bootstrap holds the scale fixed and cannot correct for it. Under the null strategy returns are uncorrelated, so both scales estimate the same quantity, and the block bootstrap still accounts for dependence. The Monte Carlo has sampling error, so I would not quote the size of the excess precisely.
+
+**6. How did you choose the number of independent trials for the DSR?**
+I implemented four estimators and tested them in null worlds by comparing each one's predicted best Sharpe with the realised average. The raw count and the average-correlation formula were too high, clustering and the eigenvalue ratio far too low. A direct simulation, draw correlated normals with the empirical correlation matrix, average the maximum, and invert the expected-maximum formula, was closest, so that is the primary one. On the real data it gives 579 against a raw count of 4,984.
+
+**7. The spec said to use clustering. Why did you not?**
+I did implement it, a simplified version of Lopez de Prado's ONC, and report its result. It returned 2 clusters on the real data, essentially trend versus mean reversion, and a DSR built on a cluster count passed in up to 86% of null worlds. A cluster of correlated variants is not one trial: the best of several hundred imperfectly correlated variants is still inflated. Lopez de Prado's full method selects among cluster aggregates, which is consistent; selecting the best raw variant and deflating by the cluster count is not.
+
+**8. PBO is 0.27. Is that good or bad?**
+It means the in-sample winner landed in the bottom half out of sample in 27% of splits, compared with about 50% for pure noise. So rankings persist to some extent. That persistence comes from shared market exposure: on active returns PBO is 0.41. PBO measures rank stability, not whether the level of performance exceeds luck.
+
+**9. What exactly is being cross-validated in CPCV when there is no model?**
+The selection rule "trade the variant with the best training-set Sharpe". Each split fits that rule on purged training data and evaluates the pick on the test groups; the test results recombine into 9 full-length out-of-sample paths. Their median Sharpe is 0.73 against 1.47 on the training sets.
+
+**10. Why purge and embargo if each observation is a one-day return?**
+Positions persist and indicators overlap, so a day just outside a test block shares information with days inside it, and one trade's profit can span the boundary. The purge horizon and embargo model that dependence. They are judgement calls, which I say openly, and the robustness experiment varies them.
+
+**11. Your Reality Check and SPA p-values differ (0.26 and 0.12). Why?**
+The Reality Check uses raw mean returns, so volatile strategies dominate its maximum, and it re-centres every strategy including clearly bad ones, which inflates the null distribution. SPA studentises and leaves significantly negative strategies out of the null. SPA is the more powerful test and is the one I quote.
+
+**12. How much data would you need to believe a Sharpe of 1?**
+For a single pre-specified strategy, about 2.7 years of daily data at 95% under normal returns (the minimum track record length). After searching, far more: with a few hundred effective trials the luck benchmark over this sample is around 1.1, and the power experiment found that SPA reaches 50% detection at an oracle Sharpe of about 2.5 (true net Sharpe of the best variant about 0.8); Holm reaches 50% detection at an oracle Sharpe of about 2.4 (true net Sharpe of the best variant about 0.8); the DSR as defined in the paper never reaches 50% detection in the tested range (up to 4).
+
+**13. Is crypto data appropriate for this? It is one bull market.**
+It is a limitation and I list it. The sample has strong drift, which is why long-only rules pass tests against cash. The methods are not crypto-specific, the code takes any OHLCV panel, and the null and power experiments are independent of the asset class. On the data source for these results: The primary source in the spec is Binance spot OHLCV (`data.binance.vision`). The machine this run was made on could not reach that host, so this run uses the fallback: real daily prices from the CoinMetrics community dataset (one reference price per day, no intraday high or low, so Donchian channels are channels of daily closes). Binance data replaces it with `make data && make all`.
+
+**14. What is the difference between FWER and FDR, and which should a quant use?**
+FWER is the probability of any false discovery; FDR is the expected fraction of discoveries that are false. For a decision to put capital behind one strategy, FWER is the relevant guarantee. For screening a long list of signals for further research, FDR is more appropriate because it keeps power. Here they disagree, and the disagreement is informative: a broad weak effect exists, no individual variant stands out.
+
+**15. If you had to trade one of these, what would you do?**
+I would not trade any on this evidence. If forced, I would not pick the single best variant; I would combine a family of slow trend rules across assets, size by volatility, expect something closer to the walk-forward and CPCV figures than the in-sample ones, and compare against buy-and-hold, which nothing here beat.
+
+## 3. Weakest points, and how to respond
+
+**"The benchmark is cash, so long-only strategies pass by holding a rising asset."**
+Correct, and it is the first thing I would raise myself. I ran the same tests on returns in excess of buy-and-hold: nothing is significant. A better design would test against a volatility-matched or exposure-matched benchmark.
+
+**"The asset list has survivorship bias."**
+Yes. The coins were chosen for being large and long-lived, which flatters long-only results. Even with that tailwind nothing survives family-wise correction, so the bias does not rescue the strategies, but the size of the broad effect that FDR control picks up is overstated. A point-in-time universe is in NEXT_STEPS.
+
+**"You used CoinMetrics closes, not exchange OHLCV, and no hourly data."**
+True for the committed run, because of the build environment. The downloader, parser and hourly path are implemented and unit-tested, and the real-data swap is one command, but I have not yet seen results on Binance data. I would re-run before quoting the numbers as exchange-level results.
+
+**"You modified two published methods."**
+I did, and I kept the originals in the output so the effect is visible. Both changes were forced by a failed null test, the mechanism is reproduced by unit tests, and they are documented. The alternative, using a method I had seen over-reject, would be worse. I am open to the criticism that my Monte Carlo is small.
+
+**"Your Monte Carlo worlds are small and few."**
+Each world has 1,000 variants and the rates come from 200 worlds per null type, so intervals are a few percentage points wide and the correlation structure is simpler than real data. The qualitative findings are large effects; the exact rates are not precise.
+
+**"The cost model is crude and shorting is free."**
+Yes: a flat fee, volatility-proportional slippage, no funding, no impact. More realistic costs would lower net returns further, which strengthens rather than weakens the conclusion that nothing survives.
+
+**"5,000 variants of technical rules is a straw man."**
+The universe was chosen to be a realistic example of a parameter sweep, not to contain good strategies. The claim is about what a search of this kind can support, not about systematic trading in general. The framework is the contribution; any T x N return matrix can be put through it.
+
+**"The DSR depends on an effective N you estimated yourself."**
+It does. I report the DSR under five different N, including the raw count and the paper's average-correlation formula, and the conclusion is the same under all except the two estimators that failed the null test.
+
+**"Did you write all of this yourself?"**
+Answer this one truthfully, whatever the truth is for you by then. If the code was produced with an AI coding assistant from your specification, say so plainly, then show what is yours: you can explain every module, reproduce every number, defend each choice in DECISIONS.md, and extend it (pick an item from NEXT_STEPS.md and build it yourself before the interview). Offer to derive any formula in the project on the spot.

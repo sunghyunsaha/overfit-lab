@@ -1,7 +1,7 @@
 # Overfit Lab: how many backtests survive honest testing?
 
 **Headline.** Of 5,000 trading-strategy variants backtested on 10 crypto assets (2018-07-01 to 2026-05-23, net of costs), 1,133 look significant when tested one at a time at 5%, 199 survive Benjamini-Hochberg, and **0 survive Holm**.
-The best variant has an annualised Sharpe ratio of 1.41, but luck alone is expected to produce 1.58: its **Deflated Sharpe Ratio is 0.29** (0.95 needed), Hansen's SPA p-value is 0.13, and the **Probability of Backtest Overfitting is 0.27**.
+The best variant has an annualised Sharpe ratio of 1.41, but luck alone is expected to produce 1.58: its **Deflated Sharpe Ratio is 0.30** (0.95 needed), Hansen's SPA p-value is 0.12, and the **Probability of Backtest Overfitting is 0.27**.
 Measured against simply holding each coin, 0 variants are significant even before any correction. Data: REAL - CoinMetrics community daily reference prices (close-only).
 
 > No variant survives: after correcting for the search, the best backtest is indistinguishable from the luckiest of many skill-less strategies.
@@ -27,11 +27,11 @@ Every number in this file and in [REPORT.md](REPORT.md) is written by the pipeli
 
 | Experiment | Question | Result |
 |---|---|---|
-| **E1** Null world | On synthetic data with no signal, do the tools stay quiet? | Naively, 179 of 5,000 skill-less variants (3.6%) look significant. After Holm: 0. After Benjamini-Hochberg: 0. Over 200 fat-tailed null worlds, Holm made a false discovery in 1.5% of them, SPA rejected in 2.0% and the DSR passed in 0.0% (nominal level 5%). |
-| **E2** Power | How strong must a real signal be to be detected? | SPA reaches 50% detection at an oracle Sharpe of about 2.4 (true net Sharpe of the best variant about 0.7); Holm reaches 50% detection at an oracle Sharpe of about 2.4 (true net Sharpe of the best variant about 0.8); the DSR never reaches 50% detection in the tested range (up to 4). |
-| **E3** Real data | What survives on crypto? | 0 of 5,000 after Holm; PBO 0.27; DSR of the best 0.29; walk-forward Sharpe -0.07 against 2.21 in the selection windows. |
-| **E4** Costs | Does the conclusion depend on fees (0 to 30 bps)? | Holm survivors range from 0 to 0; the best net Sharpe falls from 1.43 to 1.38. |
-| **E5** Robustness | Does it depend on folds, embargo, period, block length? | PBO stays between 0.24 and 0.30 for 6 to 16 CSCV blocks; the SPA p-value stays between 0.11 and 0.15 across block lengths; no sub-period has more than 0 Holm survivors. |
+| **E1** Null world | On synthetic data with no signal, do the tools stay quiet? | Naively, 179 of 5,000 skill-less variants (3.6%) look significant. After Holm: 0. After Benjamini-Hochberg: 0. Over 200 fat-tailed null worlds, Holm made a false discovery in 1.5% of them, SPA rejected in 1.5% and the DSR passed in 0.0% (nominal level 5%). |
+| **E2** Power | How strong must a real signal be to be detected? | SPA reaches 50% detection at an oracle Sharpe of about 2.5 (true net Sharpe of the best variant about 0.8); Holm reaches 50% detection at an oracle Sharpe of about 2.4 (true net Sharpe of the best variant about 0.8); the DSR as defined in the paper never reaches 50% detection in the tested range (up to 4). |
+| **E3** Real data | What survives on crypto? | 0 of 5,000 after Holm; PBO 0.27; DSR of the best 0.30; walk-forward Sharpe -0.07 against 2.21 in the selection windows. |
+| **E4** Costs | Does the conclusion depend on fees (0 to 30 bps)? | There are 0 Holm survivors at every fee level; the best net Sharpe goes from 1.43 to 1.38. |
+| **E5** Robustness | Does it depend on folds, embargo, period, block length? | PBO stays between 0.24 and 0.30 for 6 to 16 CSCV blocks; the SPA p-value stays between 0.10 and 0.15 across block lengths; no sub-period has a single Holm survivor. |
 
 One finding came from validating the tools rather than from the data: plugging the in-sample skewness into the Probabilistic Sharpe Ratio and applying Bonferroni produced false discoveries in 14% of Gaussian null worlds (5% allowed). The cause and the fix are described in [REPORT.md](REPORT.md) section 5.1 and [DECISIONS.md](DECISIONS.md).
 
@@ -39,8 +39,8 @@ One finding came from validating the tools rather than from the data: plugging t
 
 **E3, E4 and E5 use: REAL - CoinMetrics community daily reference prices (close-only).**
 
-- The primary source in the spec is Binance spot OHLCV from `data.binance.vision`. The machine this repository was built on could not reach that host, so the committed results use the fallback: real daily prices from the CoinMetrics community dataset (one reference price per day, no intraday high or low). Sample: 2,884 daily bars per asset, 2018-07-01 to 2026-05-23.
-- Binance data is a one-command drop-in: `make data && make all`. `make all` uses the Binance cache if it exists, otherwise the CoinMetrics cache, otherwise a synthetic stand-in, and prints which one it used. The source is also recorded in `reports/results/e3.json` and in this section.
+- The primary source in the spec is Binance spot OHLCV (`data.binance.vision`). The machine this run was made on could not reach that host, so this run uses the fallback: real daily prices from the CoinMetrics community dataset (one reference price per day, no intraday high or low, so Donchian channels are channels of daily closes). Binance data replaces it with `make data && make all`. Sample: 2,884 daily bars per asset, 2018-07-01 to 2026-05-23.
+- `make all` uses the Binance cache if it exists, otherwise the CoinMetrics cache, otherwise a synthetic stand-in, and prints which one it used. The source is also recorded in `reports/results/e3.json` and in this section.
 - **E1 and E2 are synthetic by design** (they need a known ground truth).
 
 ## How to reproduce

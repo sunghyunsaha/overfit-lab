@@ -30,8 +30,8 @@ Every number in this file and in [REPORT.md](REPORT.md) is written by the pipeli
 | **E1** Null world | On synthetic data with no signal, do the tools stay quiet? | Naively, {{e1.full.gross.survivors.naive:,}} of {{e1.full.gross.n_variants:,}} skill-less variants ({{e1.full.gross.survivors.naive_frac:.1%}}) look significant. After Holm: {{e1.full.gross.survivors.holm}}. After Benjamini-Hochberg: {{e1.full.gross.survivors.bh}}. Over {{e1.mc.garch.n_worlds}} fat-tailed null worlds, Holm made a false discovery in {{e1.mc.garch.rates.any_holm.rate:.1%}} of them, SPA rejected in {{e1.mc.garch.rates.spa.rate:.1%}} and the DSR passed in {{e1.mc.garch.rates.dsr_max_matching.rate:.1%}} (nominal level 5%). |
 | **E2** Power | How strong must a real signal be to be detected? | {{e2.summary.sentence}} |
 | **E3** Real data | What survives on crypto? | {{e3.net.survivors.holm:,}} of {{e3.n_variants:,}} after Holm; PBO {{e3.net.pbo.pbo:.2f}}; DSR of the best {{e3.net.dsr_primary.dsr:.2f}}; walk-forward Sharpe {{e3.net.walkforward.oos_annual:.2f}} against {{e3.net.walkforward.mean_is_annual:.2f}} in the selection windows. |
-| **E4** Costs | Does the conclusion depend on fees (0 to 30 bps)? | Holm survivors range from {{e4.summary.holm_min}} to {{e4.summary.holm_max}}; the best net Sharpe falls from {{e4.summary.best_at_min_fee:.2f}} to {{e4.summary.best_at_max_fee:.2f}}. |
-| **E5** Robustness | Does it depend on folds, embargo, period, block length? | PBO stays between {{e5.ranges.pbo_min:.2f}} and {{e5.ranges.pbo_max:.2f}} for 6 to 16 CSCV blocks; the SPA p-value stays between {{e5.ranges.spa_p_min:.2f}} and {{e5.ranges.spa_p_max:.2f}} across block lengths; no sub-period has more than {{e5.ranges.subperiod_holm_max}} Holm survivors. |
+| **E4** Costs | Does the conclusion depend on fees (0 to 30 bps)? | {{e4.summary.holm_text_cap}}; the best net Sharpe goes from {{e4.summary.best_at_min_fee:.2f}} to {{e4.summary.best_at_max_fee:.2f}}. |
+| **E5** Robustness | Does it depend on folds, embargo, period, block length? | PBO stays between {{e5.ranges.pbo_min:.2f}} and {{e5.ranges.pbo_max:.2f}} for 6 to 16 CSCV blocks; the SPA p-value stays between {{e5.ranges.spa_p_min:.2f}} and {{e5.ranges.spa_p_max:.2f}} across block lengths; {{e5.subperiod_holm_text}}. |
 
 One finding came from validating the tools rather than from the data: plugging the in-sample skewness into the Probabilistic Sharpe Ratio and applying Bonferroni produced false discoveries in {{e1.mc.gbm.rates.any_bonferroni_psr.rate:.0%}} of Gaussian null worlds (5% allowed). The cause and the fix are described in [REPORT.md](REPORT.md) section 5.1 and [DECISIONS.md](DECISIONS.md).
 
@@ -39,8 +39,8 @@ One finding came from validating the tools rather than from the data: plugging t
 
 **E3, E4 and E5 use: {{e3.data.label}}.**
 
-- The primary source in the spec is Binance spot OHLCV from `data.binance.vision`. The machine this repository was built on could not reach that host, so the committed results use the fallback: real daily prices from the CoinMetrics community dataset (one reference price per day, no intraday high or low). Sample: {{e3.data.n_bars:,}} daily bars per asset, {{e3.data.start}} to {{e3.data.end}}.
-- Binance data is a one-command drop-in: `make data && make all`. `make all` uses the Binance cache if it exists, otherwise the CoinMetrics cache, otherwise a synthetic stand-in, and prints which one it used. The source is also recorded in `reports/results/e3.json` and in this section.
+- {{e3.data.note}} Sample: {{e3.data.n_bars:,}} daily bars per asset, {{e3.data.start}} to {{e3.data.end}}.
+- `make all` uses the Binance cache if it exists, otherwise the CoinMetrics cache, otherwise a synthetic stand-in, and prints which one it used. The source is also recorded in `reports/results/e3.json` and in this section.
 - **E1 and E2 are synthetic by design** (they need a known ground truth).
 
 ## How to reproduce

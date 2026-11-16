@@ -45,7 +45,7 @@ The spec's primary source is Binance bulk data. The build machine's network poli
 
 ## D. Strategy universe
 
-**D1. Exactly 250 base variants per asset, doubled by the volatility-target overlay.** Grids were chosen to cover the conventional range of each family's parameters and to total 5,000 with ten assets. They were fixed before any real data was loaded and have not been changed since.
+**D1. Exactly 250 base variants per asset, doubled by the volatility-target overlay.** Grids were chosen to cover the conventional range of each family's parameters and to total 5,000 with ten assets. They were written into the config before any backtest was run on real data and have not been changed since.
 
 **D2. Variants that never trade stay in the universe.** They were tried, so they count as trials. They get Sharpe 0 and p = 1 and are ignored by the bootstrap tests.
 
@@ -90,3 +90,5 @@ The spec's primary source is Binance bulk data. The build machine's network poli
 **F6. Seeds.** One base seed in the config; each experiment and each simulated world derives its own seed by a fixed offset, so results are reproducible and worlds are independent.
 
 **F7. Float32 on disk, float64 in memory.** The saved matrices are for inspection; all diagnostics run on the float64 matrices built in memory.
+
+**F8. Order of work, stated plainly.** The per-variant p-value correction (E1 above) was made before the real-data experiment was first run. The SPA scale change (E4 above) was made after a first real-data run, and was decided from the null-world Monte Carlo alone. Its effect on the real data is reported in REPORT section 5.3: it moved the SPA p-value towards significance, and no conclusion changed. The strategy grids, cost settings and sample window were never changed after the first real-data run.
