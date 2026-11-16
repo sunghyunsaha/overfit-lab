@@ -1,0 +1,7 @@
+# Keep LF line endings on every platform so the formatter check and the
+# "documents equal rendered templates" test behave the same on Windows.
+* text=auto eol=lf
+*.png binary
+*.parquet binary
+*.npy binary
+*.npz binary

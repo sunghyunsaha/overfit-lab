@@ -4,6 +4,10 @@ Templates live in ``docs/templates/*.tmpl``. A placeholder ``{{ e3.net.pbo.pbo:.
 is replaced by the value found at that dotted path in the combined results, formatted
 with the given Python format spec (optional). Rendering is strict: an unknown path
 raises an error instead of leaving a hole in the document.
+
+A block ``{{#if hourly}} ... {{/if}}`` is kept only if that path exists in the results.
+It is used for the optional hourly run, whose results live in their own folder and may
+not have been produced.
 """
 
 from __future__ import annotations
@@ -16,6 +20,7 @@ from typing import Any
 from overfitlab.config import REPO_ROOT, resolve_path
 
 PLACEHOLDER = re.compile(r"\{\{\s*([A-Za-z0-9_.\-]+)\s*(?::([^{}]+?))?\s*\}\}")
+SECTION = re.compile(r"\{\{#if\s+([A-Za-z0-9_.\-]+)\s*\}\}\n?(.*?)\{\{/if\}\}\n?", re.DOTALL)
 TEMPLATE_DIR = REPO_ROOT / "docs" / "templates"
 
 
@@ -39,8 +44,25 @@ def lookup(data: dict, path: str) -> Any:
     return node
 
 
+def _exists(data: dict, path: str) -> bool:
+    try:
+        lookup(data, path)
+    except (KeyError, IndexError, ValueError):
+        return False
+    return True
+
+
 def render(template: str, data: dict) -> str:
-    """Substitute every ``{{ path[:format] }}`` placeholder in ``template``."""
+    """Substitute every ``{{ path[:format] }}`` placeholder in ``template``.
+
+    ``{{#if path}} ... {{/if}}`` blocks are resolved first: the body is kept when ``path``
+    exists in ``data`` and dropped otherwise. Blocks do not nest.
+    """
+
+    def section(match: re.Match) -> str:
+        return match.group(2) if _exists(data, match.group(1)) else ""
+
+    template = SECTION.sub(section, template)
 
     def substitute(match: re.Match) -> str:
         value = lookup(data, match.group(1))
@@ -69,7 +91,13 @@ def build_documents(cfg: dict, check: bool = False) -> dict[str, bool]:
     the file on disk already equals the rendered template (used by the test-suite to
     guarantee the committed documents match the committed results).
     """
-    data = load_results(resolve_path(cfg, "output_dir") / "results")
+    out_dir = resolve_path(cfg, "output_dir")
+    data = load_results(out_dir / "results")
+    # The optional hourly run (`make hourly`) keeps its own results folder; its E3 is made
+    # available to the templates as ``hourly``.
+    hourly = out_dir / "hourly" / "results" / "e3.json"
+    if hourly.exists():
+        data["hourly"] = json.loads(hourly.read_text(encoding="utf-8"))
     status = {}
     for tmpl in sorted(TEMPLATE_DIR.glob("*.tmpl")):
         target = REPO_ROOT / tmpl.name.removesuffix(".tmpl")

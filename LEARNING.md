@@ -898,8 +898,8 @@ FWER control bounds the probability of any false discovery, which suits a decisi
 **Q2. Why is Holm preferred to Bonferroni?**
 It gives the same guarantee under the same assumptions and rejects at least as many hypotheses, because after rejecting the smallest p-value it only needs to correct for the remaining ones.
 
-**Q3. On your data BH keeps a few hundred variants and Holm keeps none. Which is right?**
-Both, for different questions. No single variant has evidence strong enough to be trusted on its own. But the distribution of p-values is not what pure noise would give, so a list of the best contains a controlled share of false positives. The reason is a broad shared effect: long-only trend rules on assets that rose.
+**Q3. On your data BH keeps a few dozen variants and Holm keeps none. Which is right?**
+Both, for different questions. No single variant has evidence strong enough to be trusted on its own. But the distribution of p-values is not what pure noise would give, so a list of the best contains a controlled share of false positives. The reason is a broad shared effect: long-only trend rules on assets with positive average returns. Be ready for the follow-up that the BH result is fragile: Benjamini-Yekutieli, which is valid under any dependence, keeps none, and the BH count falls to zero once the fee is raised (E4).
 
 **Q4. What does the haircut Sharpe ratio add?**
 It converts a statistical correction into the unit practitioners think in. Instead of "the adjusted p-value is 0.3", it says "after accounting for the search this 1.4 is worth about 0.3".
@@ -977,7 +977,7 @@ The backtest length below which the best of N skill-less strategies is expected 
 The expected maximum of N standard normals is below $`\sqrt{2\ln N}`$. The annualised Sharpe of a skill-less strategy over y years is roughly normal with standard deviation $`1/\sqrt y`$, so the expected best is below $`\sqrt{2\ln N / y}`$. Requiring that to be below the target gives $`y > 2\ln N/\overline{SR}^2`$.
 
 **Q3. You have 8 years and tried 5,000 variants. What does MinBTL tell you?**
-For 5,000 independent trials a Sharpe of 1 would need over 13 years, so a Sharpe of 1 means nothing. With the effective number of trials (a few hundred) the required length is shorter, but the best observed Sharpe is still close to the luck level for the sample length.
+For 5,000 independent trials a Sharpe of 1 would need over 13 years, so a Sharpe of 1 means nothing. With the effective number of trials (several hundred) the required length is shorter, but the best observed Sharpe is still close to the luck level for the sample length.
 
 **Q4. How should this change a research process?**
 Count trials, and decide the search budget before looking: with a fixed amount of data, each extra configuration raises the Sharpe ratio needed to be credible. Prefer few, well-motivated hypotheses to wide grids.
@@ -1182,7 +1182,15 @@ E[w_{t-1} r_t] = \underbrace{E[w_{t-1}]\,E[r_t]}_{\text{exposure}\ \times\ \text
 
 The first term is market exposure and requires no skill. Only the covariance term is timing ability.
 
-**Active returns.** To test timing, subtract buy-and-hold of the same asset: $`a_{k,t} = \text{net}_{k,t} - r_t`$. Running the diagnostics on the matrix of $`a`$ asks "does any variant beat holding the coin?" A variant that is flat half the time in a rising market has negative active return even if its Sharpe ratio is higher than the coin's, so this is a strict test.
+**Active returns.** Subtract buy-and-hold of the same asset: $`a_{k,t} = \text{net}_{k,t} - r_t`$. From the decomposition, before costs,
+
+```math
+E[a_{k,t}] = \underbrace{(E[w_{t-1}] - 1)\,E[r_t]}_{\text{drift given up while flat}} + \underbrace{\text{Cov}(w_{t-1}, r_t)}_{\text{timing}} .
+```
+
+Running the diagnostics on the matrix of $`a`$ asks "did any variant earn more than holding the coin?" That is stricter than a test of timing. A long-only variant that is flat half the time gives up half the drift, and its timing term has to exceed that loss before the active return is positive. It can have a higher Sharpe ratio than the coin and still fail. So the result "nothing is significant against buy-and-hold" means "nothing earned significantly more than holding". It does not mean the timing term is zero, and it does not mean holding had the better Sharpe ratio. A test of the timing term alone would subtract exposure-matched holding, $`E[w]\,r_t`$, or regress the variant on its asset and test the intercept (NEXT_STEPS, "Better benchmarks"). The analysis is run on net and on gross returns.
+
+**Hourly bars.** The same code runs on one-hour bars with `configs/hourly.yaml`: strategies trade hourly, their returns are summed to daily, and the diagnostics are unchanged. Windows are counted in bars, so the grid covers 5 to 250 hours. Turnover is far higher, which is why the gross and net results differ so much there.
 
 **Reading the outputs together.**
 
@@ -1196,11 +1204,11 @@ The first term is market exposure and requires no skill. Only the covariance ter
 | PBO | Do in-sample rankings persist out of sample? |
 | Walk-forward, CPCV | What would selecting the winner actually have earned? |
 | MinBTL | Was the sample long enough for this many trials? |
-| Active-return column | Is any of it more than holding the asset? |
+| Active-return columns | Did anything earn more than holding the asset, before or after costs? |
 
 ### Where it lives
 
-`experiments/e3_real.py`: `load_universe`, `buy_and_hold_matrix`, `family_table`, `verdict`, `run`. The diagnostics are in `experiments/common.py: diagnose`. Results: `reports/results/e3.json`; figures `e3_*.png`.
+`experiments/e3_real.py`: `load_universe`, `buy_and_hold_matrix`, `family_table`, `top10_summary`, `verdict`, `run`. The hourly run is the same code with `configs/hourly.yaml`; its results are in `reports/hourly/`. The diagnostics are in `experiments/common.py: diagnose`. Results: `reports/results/e3.json`; figures `e3_*.png`.
 
 ### Common mistakes and how the code avoids them
 
@@ -1208,18 +1216,20 @@ The first term is market exposure and requires no skill. Only the covariance ter
 - **Hiding the data source.** The source label is stored with the results and printed in README and REPORT.
 - **Testing only against cash.** The active-return analysis is in the same table.
 - **Tuning after looking.** Grids, costs and sample start are in the config and were not changed after the first real-data run.
-- **Treating BH discoveries as tradeable strategies.** The family table and the active-return column show they are mostly shared market exposure.
+- **Treating BH discoveries as tradeable strategies.** The family table and the active-return columns show they are mostly shared market exposure.
+- **Reporting gross results only.** On hourly bars the gross matrix passes Holm and SPA and the net matrix does not. Both are in the same table.
+- **Over-reading the buy-and-hold comparison.** It tests a difference of mean returns. "Nothing earns significantly more than holding" is the claim; "holding is better" is not.
 
 ### Interview questions
 
 **Q1. Summarise the real-data result.**
-Out of 5,000 variants, over a thousand pass a naive 5% test, a few hundred survive false-discovery-rate control, and none survives family-wise control. The best Sharpe is below the level expected from luck given the effective number of trials, SPA does not reject, and nothing is significant relative to buy-and-hold. The exact figures are in the README.
+Out of 5,000 variants, about a thousand pass a naive 5% test, a few dozen survive false-discovery-rate control at the baseline fee, and none survives family-wise control. The best Sharpe is below the level expected from luck given the effective number of trials, SPA does not reject, and nothing earns significantly more than buy-and-hold. On hourly bars the same rules pass family-wise tests before costs and none does after costs. The exact figures are in the README.
 
-**Q2. BH finds hundreds of survivors. Are those real strategies?**
-They have genuinely positive expected returns relative to cash, but the source is long exposure to assets that rose a great deal. Against buy-and-hold of the same asset none is significant even before correction. So they are real exposure and not evidence of timing skill.
+**Q2. BH finds a few dozen survivors. Are those real strategies?**
+They probably have positive expected returns relative to cash, but the ten best are all long-only rules on the two coins with the highest buy-and-hold Sharpe ratios. Against buy-and-hold of the same asset none earns significantly more, even before correction. So the evidence is of exposure to the market, and it cannot be credited to timing skill. Note the limits of that comparison: it is about mean returns, so it does not show that holding was better risk-adjusted.
 
 **Q3. PBO is well below 0.5. Does that contradict "nothing survives"?**
-No. PBO measures whether rankings persist. Trend rules on rising coins rank high in most sub-samples because they share the same exposure, so the in-sample winner tends to stay in the top half. PBO does not test whether the level of performance exceeds luck.
+No. PBO measures whether rankings persist. Trend rules on coins with positive drift rank high in most sub-samples because they share the same exposure, so the in-sample winner tends to stay in the top half. PBO does not test whether the level of performance exceeds luck. The hourly run is the extreme case: net of costs its PBO is close to zero while the median variant loses money, because expensive high-turnover variants are at the bottom of every sub-sample.
 
 **Q4. The best variant is a long-only moving-average rule on one coin. What does that tell you?**
 That the winner is a diluted version of holding the best-performing asset. The selection picked the asset as much as the rule, which is exactly the kind of result selection bias produces.

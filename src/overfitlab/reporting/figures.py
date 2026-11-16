@@ -158,8 +158,7 @@ def _logit_panel(ax, logits: np.ndarray, pbo: float, title: str) -> None:
     ax.set_title(f"{title}: PBO = {pbo:.2f}")
     ax.set_xlabel("Logit of the winner's out-of-sample rank")
     ax.set_ylabel("Number of CSCV splits")
-    ax.set_ylim(0, ax.get_ylim()[1] * 1.28)  # head-room for the legend
-    ax.legend(loc="upper left")
+    _legend_below(ax, ncols=2)
 
 
 def fig_e1(results: dict, arrays: dict, outdir: Path) -> list[Path]:

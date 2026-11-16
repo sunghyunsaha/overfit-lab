@@ -2,13 +2,15 @@
 
 **Headline.** Of {{e3.n_variants:,}} trading-strategy variants backtested on {{e3.n_assets}} crypto assets ({{e3.data.start}} to {{e3.data.end}}, net of costs), {{e3.net.survivors.naive:,}} look significant when tested one at a time at 5%, {{e3.net.survivors.bh:,}} survive Benjamini-Hochberg, and **{{e3.net.survivors.holm:,}} survive Holm**.
 The best variant has an annualised Sharpe ratio of {{e3.net.sharpe.best_annual:.2f}}, but luck alone is expected to produce {{e3.net.dsr_primary.sr0_annual:.2f}}: its **Deflated Sharpe Ratio is {{e3.net.dsr_primary.dsr:.2f}}** (0.95 needed), Hansen's SPA p-value is {{e3.net.snooping.spa_p:.2f}}, and the **Probability of Backtest Overfitting is {{e3.net.pbo.pbo:.2f}}**.
-Measured against simply holding each coin, {{e3.vs_buy_hold.survivors.naive:,}} variants are significant even before any correction. Data: {{e3.data.label}}.
+Measured against simply holding each coin, {{e3.vs_buy_hold.survivors.naive:,}} variants earn significantly more even before any correction. Data: {{e3.data.label}}.
 
 > {{e3.verdict.overall}}
 
 ![Survival funnel and PBO logit distribution](reports/figures/e3_key_figure.png)
 
 *Left: how many of the {{e3.n_variants:,}} variants are still significant after each multiple-testing correction. Right: the CSCV logit distribution; mass to the left of zero means the in-sample winner ended up in the bottom half out of sample.*
+
+[![CI](https://github.com/sunghyunsaha/overfit-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/sunghyunsaha/overfit-lab/actions/workflows/ci.yml)
 
 ## The question
 
@@ -30,18 +32,25 @@ Every number in this file and in [REPORT.md](REPORT.md) is written by the pipeli
 | **E1** Null world | On synthetic data with no signal, do the tools stay quiet? | Naively, {{e1.full.gross.survivors.naive:,}} of {{e1.full.gross.n_variants:,}} skill-less variants ({{e1.full.gross.survivors.naive_frac:.1%}}) look significant. After Holm: {{e1.full.gross.survivors.holm}}. After Benjamini-Hochberg: {{e1.full.gross.survivors.bh}}. Over {{e1.mc.garch.n_worlds}} fat-tailed null worlds, Holm made a false discovery in {{e1.mc.garch.rates.any_holm.rate:.1%}} of them, SPA rejected in {{e1.mc.garch.rates.spa.rate:.1%}} and the DSR passed in {{e1.mc.garch.rates.dsr_max_matching.rate:.1%}} (nominal level 5%). |
 | **E2** Power | How strong must a real signal be to be detected? | {{e2.summary.sentence}} |
 | **E3** Real data | What survives on crypto? | {{e3.net.survivors.holm:,}} of {{e3.n_variants:,}} after Holm; PBO {{e3.net.pbo.pbo:.2f}}; DSR of the best {{e3.net.dsr_primary.dsr:.2f}}; walk-forward Sharpe {{e3.net.walkforward.oos_annual:.2f}} against {{e3.net.walkforward.mean_is_annual:.2f}} in the selection windows. |
+{{#if hourly}}
+| **E3 hourly** | The same rules on 1-hour bars? | Before costs {{hourly.gross.survivors.holm:,}} variants survive Holm against cash (SPA p = {{hourly.gross.snooping.spa_p:.2f}}); after costs {{hourly.net.survivors.holm:,}} do and the median net Sharpe is {{hourly.net.sharpe.median_annual:.2f}}. Against buy-and-hold, {{hourly.gross_vs_buy_hold.survivors.bh:,}} survive Benjamini-Hochberg before costs and {{hourly.vs_buy_hold.survivors.bh:,}} after. |
+{{/if}}
 | **E4** Costs | Does the conclusion depend on fees (0 to 30 bps)? | {{e4.summary.holm_text_cap}}; the best net Sharpe goes from {{e4.summary.best_at_min_fee:.2f}} to {{e4.summary.best_at_max_fee:.2f}}. |
 | **E5** Robustness | Does it depend on folds, embargo, period, block length? | PBO stays between {{e5.ranges.pbo_min:.2f}} and {{e5.ranges.pbo_max:.2f}} for 6 to 16 CSCV blocks; the SPA p-value stays between {{e5.ranges.spa_p_min:.2f}} and {{e5.ranges.spa_p_max:.2f}} across block lengths; {{e5.subperiod_holm_text}}. |
 
-One finding came from validating the tools rather than from the data: plugging the in-sample skewness into the Probabilistic Sharpe Ratio and applying Bonferroni produced false discoveries in {{e1.mc.gbm.rates.any_bonferroni_psr.rate:.0%}} of Gaussian null worlds (5% allowed). The cause and the fix are described in [REPORT.md](REPORT.md) section 5.1 and [DECISIONS.md](DECISIONS.md).
+One finding came from validating the tools rather than from the data: plugging the in-sample skewness into the Probabilistic Sharpe Ratio and applying Bonferroni produced false discoveries in {{e1.mc.gbm.rates.any_bonferroni_psr.rate:.0%}} of Gaussian null worlds (5% allowed). The per-variant tests therefore use the classical t-test instead. The choice matters for the headline and is stated here for that reason: with the PSR-based p-values, {{e3.net.survivors_psr.holm:,}} of the {{e3.n_variants:,}} variants would pass Holm and {{e3.net.survivors_psr.bh:,}} would pass Benjamini-Hochberg. The cause and the fix are described in [REPORT.md](REPORT.md) sections 5.1 and 5.3 and in [DECISIONS.md](DECISIONS.md).
 
 ## Data used
 
 **E3, E4 and E5 use: {{e3.data.label}}.**
 
 - {{e3.data.note}} Sample: {{e3.data.n_bars:,}} daily bars per asset, {{e3.data.start}} to {{e3.data.end}}.
+{{#if hourly}}
+- The hourly row above uses: {{hourly.data.label}}, {{hourly.data.n_bars:,}} one-hour bars per asset, {{hourly.data.start}} to {{hourly.data.end}}. It is produced by `make hourly`, not by `make all`.
+{{/if}}
 - `make all` uses the Binance cache if it exists, otherwise the CoinMetrics cache, otherwise a synthetic stand-in, and prints which one it used. The source is also recorded in `reports/results/e3.json` and in this section.
 - **E1 and E2 are synthetic by design** (they need a known ground truth).
+- The market data itself is not in the repository (`data/` is git-ignored). `make data` downloads it again. How the committed run obtained it is described in [DECISIONS.md](DECISIONS.md), A1.
 
 ## How to reproduce
 
@@ -56,12 +65,25 @@ make all              # E1-E5, figures, README.md and REPORT.md re-rendered from
 make data-hourly && make hourly   # optional: E3 on 1-hour Binance bars -> reports/hourly/
 ```
 
-Runs are driven by YAML (`configs/base.yaml` plus an override file) and a fixed seed, so the same config gives the same numbers. `make figures` redraws every figure from saved results without recomputing, and `make docs` re-renders the documents.
+Runs are driven by YAML (`configs/base.yaml` plus an override file) and a fixed seed, so the same config gives the same numbers. `make figures` redraws every figure from saved results without recomputing, and `make docs` re-renders the documents. The full run takes about 12 minutes on two cores and the hourly run about 2 minutes.
+
+**Without `make` (for example on Windows).** Every target is one Python command, listed in the `Makefile`. After `pip install -r requirements.txt` and `pip install -e . --no-deps`:
+
+```
+python -m pytest
+python -m overfitlab.cli all --config configs/demo.yaml
+python -m overfitlab.cli check-data --config configs/full.yaml
+python -m overfitlab.cli download --config configs/full.yaml --source binance
+python -m overfitlab.cli all --config configs/full.yaml
+python -m overfitlab.cli download --config configs/hourly.yaml --source binance
+python -m overfitlab.cli e3 --config configs/hourly.yaml
+python -m overfitlab.cli docs --config configs/full.yaml
+```
 
 ## Repository map
 
 ```
-configs/                 base.yaml (every knob), full.yaml, demo.yaml
+configs/                 base.yaml (every knob), full.yaml, demo.yaml, hourly.yaml
 src/overfitlab/
   data/                  synthetic.py (GBM, GARCH, planted signal), binance.py, coinmetrics.py, loader.py
   backtest/              indicators.py, strategies.py, engine.py (the backtester), universe.py (T x N matrix)
@@ -70,11 +92,12 @@ src/overfitlab/
                          multiple.py (Bonferroni, Holm, BH, BY, haircut), walkforward.py
   experiments/           common.py (the diagnostic pipeline), e1_null.py ... e5_robustness.py
   reporting/             figures.py, render.py (templates -> documents)
-  cli.py                 python -m overfitlab.cli <download|e1..e5|all|figures|docs>
+  cli.py                 python -m overfitlab.cli <download|check-data|e1..e5|all|figures|docs>
 tests/                   lookahead, hand-calculated backtest, paper numbers, purging, brute-force PBO, ...
 docs/templates/          README / REPORT / INTERVIEW_PREP templates with placeholders for pipeline numbers
 reports/results/         one JSON per experiment (the single source of every reported number)
 reports/figures/         all figures
+reports/hourly/          results and figures of the optional hourly run
 ```
 
 ## Documents

@@ -10,7 +10,7 @@ data:
   source: auto                 # auto | binance | coinmetrics | synthetic
   interval: 1d                 # 1d or 1h (1h strategies are aggregated to daily returns)
   start: "2018-07-01"
-  end: null
+  end: "2026-11-15"            # last complete day of the committed run; null = everything available
   cache_dir: data
   symbols: [BTC, ETH, BNB, XRP, ADA, LTC, TRX, XLM, ETC, NEO]
   quote: USDT                  # Binance quote asset

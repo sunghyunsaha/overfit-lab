@@ -28,3 +28,10 @@ def test_missing_keys_fail_loudly():
 
 def test_md_table():
     assert md_table(["a", "b"], [["1", "2"]]) == "| a | b |\n|---|---|\n| 1 | 2 |"
+
+
+def test_optional_section_is_kept_only_when_its_data_exists():
+    template = "a\n{{#if extra}}\nvalue {{ extra.x:.1f }}\n{{/if}}\nb\n"
+    assert render(template, {"extra": {"x": 2.0}}) == "a\nvalue 2.0\nb\n"
+    # Without the data the block disappears, including its strict placeholders.
+    assert render(template, {}) == "a\nb\n"

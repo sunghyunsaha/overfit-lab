@@ -156,7 +156,9 @@ SOURCE_LABELS = {
 SOURCE_NOTES = {
     "binance": (
         "This run uses the project's primary source: Binance spot OHLCV bulk data from "
-        "`data.binance.vision`, downloaded and checksum-verified by `make data`."
+        "`data.binance.vision`, which are one exchange's own bars (open, high, low, close, "
+        "volume). The downloader verifies each archive against the SHA-256 checksum file "
+        "that Binance publishes beside it."
     ),
     "coinmetrics": (
         "The primary source in the spec is Binance spot OHLCV (`data.binance.vision`). The "

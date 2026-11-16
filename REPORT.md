@@ -2,11 +2,11 @@
 
 *A study of selection bias in systematic trading-strategy research.*
 
-**Data used for the empirical results (E3 to E5): REAL - CoinMetrics community daily reference prices (close-only).** Experiments E1 and E2 are synthetic by design. Every number and table in this report is written by the pipeline from `reports/results/*.json`. The prose that interprets them was written for the committed run; if you re-run on other data, re-read it against the regenerated tables.
+**Data used for the empirical results (E3 to E5): REAL - Binance spot OHLCV (data.binance.vision).** Experiments E1 and E2 are synthetic by design. Every number and table in this report is written by the pipeline from `reports/results/*.json`. The prose that interprets them was written for the committed run; if you re-run on other data, re-read it against the regenerated tables.
 
 ## Abstract
 
-We generate 5,000 variants of five classic technical trading rules on 10 crypto assets, backtest them net of costs on 7.9 years of daily data, and ask how many remain statistically convincing once the search itself is accounted for. Tested one at a time at the 5% level, 1,133 variants (22.7%) look significant. After Holm's correction 0 remain; after Benjamini-Hochberg 199. The best variant's annualised Sharpe ratio of 1.41 is below what the best of that many skill-less strategies is expected to show (1.58), giving a Deflated Sharpe Ratio of 0.30. Hansen's SPA test does not reject the hypothesis that no variant has positive expected return (p = 0.12), and the Probability of Backtest Overfitting is 0.27. Measured against buy-and-hold of the same coin instead of cash, 0 variants are significant even before correction. The same tools are first validated on synthetic markets with no signal, where they should stay silent, and on markets with a planted signal, where they should not. That validation exposed two finite-sample problems in textbook recipes (section 5.1). Both were corrected on the evidence of the synthetic worlds alone, and the real-data results are shown with the original and the corrected versions side by side.
+We generate 5,000 variants of five classic technical trading rules on 10 crypto assets, backtest them net of costs on 8.4 years of daily data, and ask how many remain statistically convincing once the search itself is accounted for. Tested one at a time at the 5% level, 1,028 variants (20.6%) look significant. After Holm's correction 0 remain; after Benjamini-Hochberg 34. The best variant's annualised Sharpe ratio of 1.36 is below what the best of that many skill-less strategies is expected to show (1.53), giving a Deflated Sharpe Ratio of 0.30. Hansen's SPA test does not reject the hypothesis that no variant has positive expected return (p = 0.15), and the Probability of Backtest Overfitting is 0.22. Measured against buy-and-hold of the same coin instead of cash, 0 variants earn significantly more even before correction. On one-hour bars the same rules look better before costs (20 survive Holm against cash) and worse after them (0 survive, median net Sharpe ratio -0.66). The same tools are first validated on synthetic markets with no signal, where they should stay silent, and on markets with a planted signal, where they should not. That validation exposed two finite-sample problems in textbook recipes (section 5.1). Both were corrected on the evidence of the synthetic worlds alone, and the real-data results are shown with the original and the corrected versions side by side. One of the two matters for the headline: with the original p-values 1 of the 5,000 variants would pass Holm (section 5.3).
 
 ## 1. Introduction
 
@@ -24,24 +24,24 @@ The contribution is not a trading strategy. It is a worked demonstration, with t
 
 ### 2.1 Real data
 
-Source for this run: **REAL - CoinMetrics community daily reference prices (close-only)**. Assets: 10 large, long-lived coins. Sample: 2018-07-01 to 2026-05-23, 2,884 daily bars per asset, aligned on a common calendar.
+Source for this run: **REAL - Binance spot OHLCV (data.binance.vision)**. Assets: 10 large, long-lived coins. Sample: 2018-07-01 to 2026-11-15, 3,060 daily bars per asset, aligned on a common calendar.
 
-The primary source in the spec is Binance spot OHLCV (`data.binance.vision`). The machine this run was made on could not reach that host, so this run uses the fallback: real daily prices from the CoinMetrics community dataset (one reference price per day, no intraday high or low, so Donchian channels are channels of daily closes). Binance data replaces it with `make data && make all`. The downloader for the primary source verifies each archive's checksum (`data/binance.py`).
+This run uses the project's primary source: Binance spot OHLCV bulk data from `data.binance.vision`, which are one exchange's own bars (open, high, low, close, volume). The downloader verifies each archive against the SHA-256 checksum file that Binance publishes beside it.
 
 Buy-and-hold over the sample, for context:
 
 | Asset | Buy-and-hold Sharpe | Annualised volatility | Total return |
 |---|---|---|---|
-| BTC | 0.82 | 62% | +1104% |
-| ETH | 0.65 | 83% | +368% |
-| BNB | 0.99 | 84% | +4470% |
-| XRP | 0.62 | 101% | +194% |
-| ADA | 0.55 | 99% | +71% |
-| LTC | 0.38 | 88% | -33% |
-| TRX | 0.75 | 87% | +889% |
-| XLM | 0.43 | 100% | -26% |
-| ETC | 0.42 | 101% | -44% |
-| NEO | 0.21 | 101% | -91% |
+| BTC | 0.76 | 61% | +928% |
+| ETH | 0.62 | 82% | +306% |
+| BNB | 0.94 | 83% | +4053% |
+| XRP | 0.57 | 100% | +111% |
+| ADA | 0.50 | 99% | +9% |
+| LTC | 0.37 | 88% | -43% |
+| TRX | 0.71 | 86% | +733% |
+| XLM | 0.44 | 102% | -29% |
+| ETC | 0.37 | 99% | -62% |
+| NEO | 0.16 | 101% | -95% |
 
 The loader validates every asset and logs each finding (`reports/results/data_validation.json`). Duplicated timestamps are dropped, missing bars are filled flat at the previous close with zero volume, inconsistent highs and lows are widened, and outliers (daily log returns above 12 robust standard deviations) are logged but left unchanged, because large moves in crypto are usually real. Counts for this run:
 
@@ -52,7 +52,7 @@ The loader validates every asset and logs each finding (`reports/results/data_va
 | gaps | 0 |
 | ohlc inconsistent | 0 |
 | zero volume | 0 |
-| outliers | 26 |
+| outliers | 31 |
 
 ### 2.2 Synthetic data
 
@@ -155,7 +155,7 @@ PBO is the fraction of splits in which the in-sample winner falls in the bottom 
 
 ### 4.5 Purged k-fold and Combinatorial Purged Cross-Validation
 
-Here the "model" is the rule "trade the variant with the best training-set Sharpe ratio". Following Lopez de Prado (2018, chapters 7 and 12), training observations whose information window overlaps the test set are purged, and an embargo removes further observations after each test block. With N groups and k test groups there are $`\binom{N}{k}`$ splits and they recombine into $`\binom{N-1}{k-1}`$ backtest paths, each covering the whole sample out of sample. We use 10 groups with 2 test groups (45 splits, 9 paths), a purge horizon of 20 bars and an embargo of 29 bars. A test checks by brute force that no training observation overlaps a test window (`tests/test_cv.py`).
+Here the "model" is the rule "trade the variant with the best training-set Sharpe ratio". Following Lopez de Prado (2018, chapters 7 and 12), training observations whose information window overlaps the test set are purged, and an embargo removes further observations after each test block. With N groups and k test groups there are $`\binom{N}{k}`$ splits and they recombine into $`\binom{N-1}{k-1}`$ backtest paths, each covering the whole sample out of sample. We use 10 groups with 2 test groups (45 splits, 9 paths), a purge horizon of 20 bars and an embargo of 31 bars. A test checks by brute force that no training observation overlaps a test window (`tests/test_cv.py`).
 
 ### 4.6 Reality Check and SPA
 
@@ -298,80 +298,82 @@ The practical message is the mirror image of E1: the thresholds that keep the to
 
 ### 5.3 E3: real data
 
-**Setup.** 5,000 variants, 2,884 daily bars (7.9 years), net of 10 bps per side plus slippage. 16 variants never traded and are counted as trials with p = 1.
+**Setup.** 5,000 variants, 3,060 daily bars (8.4 years), net of 10 bps per side plus slippage. 14 variants never traded and are counted as trials with p = 1.
 
 **By family (net).**
 
 | Family | Variants | Median Sharpe | Best Sharpe | Share with Sharpe > 0 | Naively significant | Turnover (x equity / year) |
 |---|---|---|---|---|---|---|
-| ma_cross | 1,360 | 0.46 | 1.41 | 89% | 517 | 11 |
-| tsmom | 520 | 0.48 | 1.35 | 91% | 198 | 36 |
-| zscore_mr | 1,600 | -0.15 | 0.75 | 35% | 18 | 16 |
-| donchian | 560 | 0.43 | 1.26 | 85% | 201 | 11 |
-| rsi | 960 | 0.22 | 1.35 | 68% | 199 | 9 |
+| ma_cross | 1,360 | 0.41 | 1.36 | 88% | 492 | 11 |
+| tsmom | 520 | 0.42 | 1.32 | 89% | 190 | 36 |
+| zscore_mr | 1,600 | -0.19 | 0.68 | 33% | 9 | 16 |
+| donchian | 560 | 0.38 | 1.18 | 86% | 153 | 9 |
+| rsi | 960 | 0.19 | 1.29 | 67% | 184 | 9 |
 
 **Top ten variants by net Sharpe ratio.**
 
 | Rank | Variant | Net Sharpe (annualised) | Unadjusted p-value |
 |---|---|---|---|
-| 1 | `BNB ma_cross{"fast":5,"ma_type":"sma","mode":"long_only","slow":50}` | 1.41 | 3.6e-05 |
-| 2 | `BNB ma_cross{"fast":5,"ma_type":"sma","mode":"long_only","slow":50} +voltarget` | 1.36 | 6.8e-05 |
-| 3 | `BNB ma_cross{"fast":10,"ma_type":"sma","mode":"long_only","slow":50}` | 1.36 | 6.9e-05 |
-| 4 | `ADA rsi{"band":30,"mode":"long_only","period":14,"style":"trend"} +voltarget` | 1.35 | 7e-05 |
-| 5 | `BNB ma_cross{"fast":5,"ma_type":"ema","mode":"long_only","slow":50} +voltarget` | 1.35 | 7.4e-05 |
-| 6 | `BTC tsmom{"lookback":40,"mode":"long_only"}` | 1.35 | 7.7e-05 |
-| 7 | `BTC tsmom{"lookback":40,"mode":"long_only"} +voltarget` | 1.34 | 7.9e-05 |
-| 8 | `BNB ma_cross{"fast":10,"ma_type":"ema","mode":"long_only","slow":50} +voltarget` | 1.32 | 0.0001 |
-| 9 | `BNB ma_cross{"fast":5,"ma_type":"ema","mode":"long_only","slow":50}` | 1.32 | 0.0001 |
-| 10 | `BNB ma_cross{"fast":5,"ma_type":"sma","mode":"long_only","slow":20} +voltarget` | 1.31 | 0.00012 |
+| 1 | `BNB ma_cross{"fast":5,"ma_type":"sma","mode":"long_only","slow":50}` | 1.36 | 4.1e-05 |
+| 2 | `BNB ma_cross{"fast":5,"ma_type":"sma","mode":"long_only","slow":50} +voltarget` | 1.36 | 4.4e-05 |
+| 3 | `BTC tsmom{"lookback":40,"mode":"long_only"}` | 1.32 | 6.4e-05 |
+| 4 | `BNB ma_cross{"fast":10,"ma_type":"sma","mode":"long_only","slow":50}` | 1.32 | 6.9e-05 |
+| 5 | `BTC tsmom{"lookback":40,"mode":"long_only"} +voltarget` | 1.32 | 7e-05 |
+| 6 | `BNB tsmom{"lookback":30,"mode":"long_only"}` | 1.31 | 7.6e-05 |
+| 7 | `BTC rsi{"band":20,"mode":"long_only","period":7,"style":"trend"} +voltarget` | 1.29 | 8.9e-05 |
+| 8 | `BNB ma_cross{"fast":10,"ma_type":"ema","mode":"long_only","slow":50} +voltarget` | 1.29 | 9.1e-05 |
+| 9 | `BNB ma_cross{"fast":10,"ma_type":"sma","mode":"long_only","slow":50} +voltarget` | 1.28 | 0.0001 |
+| 10 | `BNB ma_cross{"fast":10,"ma_type":"ema","mode":"long_only","slow":50}` | 1.27 | 0.00011 |
 
 **Per-variant tests.**
 
 | Test on each variant | Gross: survivors | Gross: share | Net: survivors | Net: share |
 |---|---|---|---|---|
-| Naive: p < alpha, no correction | 1,246 | 24.9% | 1,133 | 22.7% |
-| Benjamini-Hochberg (FDR) | 384 | 7.7% | 199 | 4.0% |
+| Naive: p < alpha, no correction | 1,133 | 22.7% | 1,028 | 20.6% |
+| Benjamini-Hochberg (FDR) | 228 | 4.6% | 34 | 0.7% |
 | Benjamini-Yekutieli (FDR, any dependence) | 0 | 0.0% | 0 | 0.0% |
 | Holm (FWER) | 0 | 0.0% | 0 | 0.0% |
 | Bonferroni (FWER) | 0 | 0.0% | 0 | 0.0% |
 
-**Family-level tests and selection diagnostics.** The last column repeats the analysis on active returns, each variant minus buy-and-hold of its own asset.
+**Family-level tests and selection diagnostics.** The last two columns repeat the analysis on active returns, each variant minus buy-and-hold of its own asset, before and after costs.
 
-| Quantity | Gross | Net | Net, minus buy-and-hold |
-|---|---|---|---|
-| Best annualised Sharpe ratio | 1.43 | 1.41 | 0.33 |
-| PSR(0) of the best variant (no correction) | 1.0000 | 1.0000 | 0.8278 |
-| White's Reality Check p-value | 0.212 | 0.257 | 0.930 |
-| Hansen's SPA p-value (consistent) | 0.111 | 0.121 | 0.955 |
-| Expected max Sharpe under the null, SR0 (annualised) | 1.57 | 1.58 | 0.67 |
-| Deflated Sharpe Ratio of the best variant | 0.336 | 0.298 | 0.171 |
-| Probability of Backtest Overfitting | 0.256 | 0.272 | 0.410 |
+| Quantity | Gross | Net | Gross, minus buy-and-hold | Net, minus buy-and-hold |
+|---|---|---|---|---|
+| Best annualised Sharpe ratio | 1.40 | 1.36 | 0.43 | 0.41 |
+| PSR(0) of the best variant (no correction) | 1.0000 | 1.0000 | 0.8876 | 0.8791 |
+| White's Reality Check p-value | 0.104 | 0.121 | 0.839 | 0.865 |
+| Hansen's SPA p-value (consistent) | 0.115 | 0.147 | 0.910 | 0.925 |
+| Expected max Sharpe under the null, SR0 (annualised) | 1.51 | 1.53 | 0.66 | 0.66 |
+| Deflated Sharpe Ratio of the best variant | 0.364 | 0.299 | 0.256 | 0.239 |
+| Probability of Backtest Overfitting | 0.205 | 0.222 | 0.325 | 0.357 |
 
 ![E3 key figure](reports/figures/e3_key_figure.png)
 
 ![E3 Sharpe distribution](reports/figures/e3_sharpe_distribution.png)
 
-**Effect of the two corrections from section 5.1 on the real data.** With p-values from $`1 - PSR(0)`$ instead of the t-test, 366 variants would survive Benjamini-Hochberg and 1 would survive Holm (against 199 and 0). With the long-run standard deviation in SPA the p-value would be 0.24 (against 0.12). For transparency about the order of work: the p-value correction was made before any real data was analysed. The change of scale in SPA was made after a first real-data run, on the evidence of the null worlds alone; it moved the real-data SPA p-value towards significance, not away from it. Neither correction changes a conclusion.
+**Effect of the two corrections from section 5.1 on the real data.** With p-values from $`1 - PSR(0)`$ instead of the t-test, 247 variants would survive Benjamini-Hochberg and 1 would survive Holm (against 34 and 0). With the long-run standard deviation in SPA the p-value would be 0.16 (against 0.15). In this run the p-value correction changes the family-wise answer, and the change of scale does not change the SPA decision at the 5% level. Where the two p-value recipes disagree, the counts quoted in this report and in the README are the t-test ones. The reason for not using the PSR recipe is its measured failure in the null worlds (Finding 1), not its effect here, and the family-level tests (Reality Check, SPA, DSR), which do not use per-variant p-values at all, do not pass either. A reader who prefers the textbook recipe should read the Holm count as 1.
+
+For transparency about the order of work: the p-value correction was made before any real data was analysed. The change of scale in SPA was made after a first real-data run, which used the fallback data source, and was decided on the evidence of the null worlds alone. The strategy grids, the cost settings and the start of the sample were fixed before that first run and were not changed when the data source became Binance ([DECISIONS.md](DECISIONS.md), F8).
 
 **Effective number of trials and the DSR.**
 
 | Estimator of N | Effective N | SR0 (annualised) | DSR of best |
 |---|---|---|---|
-| Raw count (variants that traded) | 4,984 | 1.88 | 0.070 |
-| Average correlation (Bailey & Lopez de Prado 2014) | 4,620 | 1.87 | 0.074 |
-| Max-matching simulation (this project) | 579 | 1.58 | 0.298 |
-| Clustering (simplified ONC) | 2 | 0.27 | 1.000 |
-| Eigenvalue participation ratio | 14 | 0.89 | 0.948 |
+| Raw count (variants that traded) | 4,986 | 1.81 | 0.075 |
+| Average correlation (Bailey & Lopez de Prado 2014) | 4,612 | 1.81 | 0.079 |
+| Max-matching simulation (this project) | 590 | 1.53 | 0.299 |
+| Clustering (simplified ONC) | 2 | 0.26 | 1.000 |
+| Eigenvalue participation ratio | 15 | 0.87 | 0.942 |
 
-With the theoretical null dispersion $`1/\sqrt{T-1}`$ in place of the cross-sectional dispersion, $`SR_0`$ is 1.10 and the DSR is 0.83.
+With the theoretical null dispersion $`1/\sqrt{T-1}`$ in place of the cross-sectional dispersion, $`SR_0`$ is 1.07 and the DSR is 0.82.
 
 **Selection out of sample.**
 
-- Split in half: the regression slope of second-half on first-half Sharpe ratios is 0.22 (rank correlation 0.33). The first-half winner goes from 1.88 to 0.71; the first-half top 50 go from 1.69 to 0.51 on average.
-- Walk-forward: over 24 windows the selected variants averaged 2.21 in the selection window; the stitched out-of-sample Sharpe ratio is -0.07, and 58% of windows lost money.
-- CPCV: the selected variants averaged 1.47 on the training sets; the 9 out-of-sample paths have a median Sharpe ratio of 0.73 (range 0.01 to 1.02).
-- Minimum backtest length: with 579 effective trials a Sharpe ratio of 1.41 is expected by luck in any backtest shorter than 4.8 years (6.8 years with the raw count); the sample is 7.9 years.
-- Haircut Sharpe ratio of the best variant: 0.32 after Bonferroni with the raw count (a 77% haircut), 0.72 with the effective count, 0.16 after Benjamini-Hochberg-Yekutieli.
+- Split in half: the regression slope of second-half on first-half Sharpe ratios is 0.29 (rank correlation 0.42). The first-half winner goes from 1.80 to 0.71; the first-half top 50 go from 1.61 to 0.57 on average.
+- Walk-forward: over 26 windows the selected variants averaged 2.18 in the selection window; the stitched out-of-sample Sharpe ratio is -0.31, and 62% of windows lost money.
+- CPCV: the selected variants averaged 1.47 on the training sets; the 9 out-of-sample paths have a median Sharpe ratio of 0.60 (range 0.13 to 0.85).
+- Minimum backtest length: with 590 effective trials a Sharpe ratio of 1.36 is expected by luck in any backtest shorter than 5.2 years (7.3 years with the raw count); the sample is 8.4 years.
+- Haircut Sharpe ratio of the best variant: 0.29 after Bonferroni with the raw count (a 79% haircut), 0.68 with the effective count, 0.21 after Benjamini-Hochberg-Yekutieli.
 
 ![E3 in-sample versus out-of-sample](reports/figures/e3_is_vs_oos.png)
 
@@ -379,11 +381,13 @@ With the theoretical null dispersion $`1/\sqrt{T-1}`$ in place of the cross-sect
 
 **Reading the results.** No variant survives: after correcting for the search, the best backtest is indistinguishable from the luckiest of many skill-less strategies. The best variant is `BNB ma_cross{"fast":5,"ma_type":"sma","mode":"long_only","slow":50}`. Three things stand out.
 
-First, the gap between naive and corrected counts is the headline: 1,133 variants pass a 5% test, 199 survive Benjamini-Hochberg, and none survive Holm.
+First, the gap between naive and corrected counts is the headline: 1,028 variants pass a 5% test, 34 survive Benjamini-Hochberg, and none survive Holm. The Benjamini-Hochberg count is not robust: 0 variants survive the Benjamini-Yekutieli version, which is valid under any dependence between the tests, and section 5.4 shows how the count moves with the fee.
 
-Second, the naive count is far above the 5% that pure noise would give, and PBO (0.27) is below the 0.5 of the null worlds, so the matrix is not pure noise: the in-sample winner often falls into the bottom half out of sample. The family table shows where the structure is. Trend-type rules have positive median Sharpe ratios and mean-reversion rules do not, and the assets rose strongly over the sample (see section 2.1). A long-only trend rule on a rising asset collects much of that drift. This is a real positive expected return over cash, which is what Benjamini-Hochberg picks up, but it is market exposure rather than timing skill. The active-return column makes the point: against buy-and-hold the best Sharpe ratio is 0.33, only 5% of variants beat their own asset, 0 are significant before any correction, and the SPA p-value is 0.95.
+Second, the naive count is far above the 5% that pure noise would give, and PBO (0.22) is below the 0.5 of the null worlds, so the matrix is not pure noise: the in-sample winner usually stays in the top half out of sample. The family table shows where the structure is. The trend-type families have positive median Sharpe ratios and the mean-reversion family does not. All 10 assets have a positive buy-and-hold Sharpe ratio over the sample, although only 6 of them ended it above where they started (section 2.1), and a long-only rule on an asset with positive average returns collects part of them simply by being long part of the time. The ten best variants are all on BNB and BTC, 10 of them are long-only, and those assets rank no lower than 2 out of 10 by buy-and-hold Sharpe ratio. So there is some evidence of a positive expected return over cash, which is what Benjamini-Hochberg picks up, but the tests here cannot credit it to timing. Against buy-and-hold of the same asset, the best Sharpe ratio of the return difference is 0.41, only 6% of variants earned more than their own asset, 0 are significant before any correction, and the SPA p-value is 0.93. Before costs the answer is the same (0 significant, SPA p = 0.91).
 
-Third, the best Sharpe ratio is below the luck benchmark, so the single best backtest carries no evidence beyond the family it came from. Whatever is real in this universe is a broad, modest exposure shared by hundreds of variants, not the standout performance of the winner.
+A caution on that comparison: it tests mean returns. A rule that is out of the market part of the time can have a higher Sharpe ratio than its asset while earning less in total, and the best variant's Sharpe ratio (1.36) is indeed above the highest buy-and-hold Sharpe ratio in the table of section 2.1 (0.94, BNB). The comparison therefore says that no variant earned significantly more than holding, not that holding had the better risk-adjusted record. A benchmark matched for volatility or exposure would be the sharper test and is listed in [NEXT_STEPS.md](NEXT_STEPS.md).
+
+Third, the best Sharpe ratio is below the luck benchmark, so the single best backtest carries no evidence beyond the family it came from. Whatever is real in this universe is a broad, modest exposure shared by many correlated variants, not the standout performance of the winner.
 
 ### 5.4 E4: cost sensitivity
 
@@ -391,16 +395,18 @@ Net returns are recomputed for fees from 0 to 30 bps per side with slippage unch
 
 | Fee (bps per side) | Median Sharpe | Best Sharpe | Naive | BH | Holm | SPA p | DSR of best | PBO |
 |---|---|---|---|---|---|---|---|---|
-| 0 | 0.25 | 1.43 | 1,211 | 333 | 0 | 0.117 | 0.331 | 0.26 |
-| 5 | 0.24 | 1.42 | 1,172 | 288 | 0 | 0.122 | 0.317 | 0.27 |
-| 10 | 0.23 | 1.41 | 1,133 | 199 | 0 | 0.129 | 0.302 | 0.27 |
-| 15 | 0.22 | 1.40 | 1,086 | 161 | 0 | 0.132 | 0.286 | 0.28 |
-| 20 | 0.20 | 1.40 | 1,035 | 0 | 0 | 0.139 | 0.269 | 0.28 |
-| 30 | 0.18 | 1.38 | 964 | 0 | 0 | 0.148 | 0.234 | 0.29 |
+| 0 | 0.23 | 1.39 | 1,107 | 202 | 0 | 0.120 | 0.348 | 0.21 |
+| 5 | 0.22 | 1.37 | 1,060 | 131 | 0 | 0.127 | 0.324 | 0.22 |
+| 10 | 0.21 | 1.36 | 1,028 | 34 | 0 | 0.129 | 0.292 | 0.22 |
+| 15 | 0.19 | 1.35 | 981 | 0 | 0 | 0.131 | 0.276 | 0.23 |
+| 20 | 0.18 | 1.34 | 931 | 0 | 0 | 0.139 | 0.259 | 0.24 |
+| 30 | 0.15 | 1.33 | 858 | 0 | 0 | 0.153 | 0.223 | 0.25 |
 
 ![E4 cost sensitivity](reports/figures/e4_costs.png)
 
-The naive count falls from 1,211 to 964 and the Benjamini-Hochberg count from 333 to 0 as fees rise; the median variant's Sharpe ratio goes from 0.25 to 0.18. At the family-wise level there are 0 Holm survivors at every fee level, the largest DSR at any fee is 0.33 and the smallest SPA p-value is 0.12. The best variants trade rarely, so their Sharpe ratios move little with the fee; costs mainly remove the high-turnover part of the distribution.
+The 10 bps row repeats section 5.3 with different random draws for the bootstrap and for the simulation behind the effective number of trials, so its SPA p-value and DSR differ from the values there in the second decimal place. The same applies to the baseline rows of section 5.5. That difference is the Monte Carlo error of those two procedures (1,000 bootstrap resamples), and no conclusion here depends on a difference that small.
+
+The naive count falls from 1,107 to 858 and the Benjamini-Hochberg count from 202 to 0 as fees rise; the median variant's Sharpe ratio goes from 0.23 to 0.15. At the family-wise level there are 0 Holm survivors at every fee level, the largest DSR at any fee is 0.35 and the smallest SPA p-value is 0.12. The best variants trade rarely, so their Sharpe ratios move little with the fee; costs mainly remove the high-turnover part of the distribution. The Benjamini-Hochberg count is the most fee-sensitive number in the study. It counts variants that sit close to a threshold, so a small uniform reduction in mean returns removes many of them at once.
 
 ### 5.5 E5: robustness
 
@@ -408,83 +414,145 @@ The naive count falls from 1,211 to 964 and the Benjamini-Hochberg count from 33
 
 | CSCV blocks S | Splits | PBO | P(OOS Sharpe of winner < 0) |
 |---|---|---|---|
-| 6 | 20 | 0.300 | 0.250 |
-| 8 | 70 | 0.271 | 0.186 |
-| 10 | 252 | 0.242 | 0.123 |
-| 12 | 924 | 0.281 | 0.195 |
-| 14 | 3,432 | 0.240 | 0.145 |
-| 16 | 12,870 | 0.272 | 0.168 |
+| 6 | 20 | 0.250 | 0.100 |
+| 8 | 70 | 0.186 | 0.129 |
+| 10 | 252 | 0.183 | 0.107 |
+| 12 | 924 | 0.221 | 0.146 |
+| 14 | 3,432 | 0.233 | 0.138 |
+| 16 | 12,870 | 0.222 | 0.159 |
 
 **CPCV groups and embargo; purged k-fold.**
 
 | Groups | Embargo | Splits | Paths | Mean training Sharpe | Median path Sharpe | Worst path | Best path | Paths below zero |
 |---|---|---|---|---|---|---|---|---|
-| 6 | 0% | 15 | 5 | 1.57 | 0.49 | 0.32 | 0.93 | 0% |
-| 6 | 1% | 15 | 5 | 1.56 | 0.60 | 0.24 | 0.83 | 0% |
-| 6 | 2% | 15 | 5 | 1.56 | 0.57 | 0.30 | 0.85 | 0% |
-| 6 | 5% | 15 | 5 | 1.61 | 0.59 | 0.28 | 0.93 | 0% |
-| 8 | 0% | 28 | 7 | 1.57 | 0.36 | 0.29 | 0.79 | 0% |
-| 8 | 1% | 28 | 7 | 1.57 | 0.48 | 0.24 | 0.78 | 0% |
-| 8 | 2% | 28 | 7 | 1.57 | 0.57 | 0.32 | 0.91 | 0% |
-| 8 | 5% | 28 | 7 | 1.62 | 0.63 | 0.40 | 1.09 | 0% |
-| 10 | 0% | 45 | 9 | 1.47 | 0.53 | 0.23 | 0.97 | 0% |
-| 10 | 1% | 45 | 9 | 1.47 | 0.73 | 0.01 | 1.02 | 0% |
-| 10 | 2% | 45 | 9 | 1.47 | 0.64 | 0.10 | 0.94 | 0% |
-| 10 | 5% | 45 | 9 | 1.52 | 0.88 | 0.08 | 1.09 | 0% |
-| 12 | 0% | 66 | 11 | 1.49 | 0.34 | -0.15 | 0.78 | 9% |
-| 12 | 1% | 66 | 11 | 1.48 | 0.34 | -0.17 | 0.99 | 18% |
-| 12 | 2% | 66 | 11 | 1.50 | 0.36 | 0.04 | 0.77 | 0% |
-| 12 | 5% | 66 | 11 | 1.55 | 0.57 | -0.03 | 0.72 | 9% |
+| 6 | 0% | 15 | 5 | 1.57 | 0.49 | 0.10 | 0.55 | 0% |
+| 6 | 1% | 15 | 5 | 1.55 | 0.54 | 0.04 | 0.55 | 0% |
+| 6 | 2% | 15 | 5 | 1.57 | 0.46 | 0.15 | 0.54 | 0% |
+| 6 | 5% | 15 | 5 | 1.60 | 0.34 | 0.11 | 0.93 | 0% |
+| 8 | 0% | 28 | 7 | 1.48 | 0.78 | 0.09 | 1.05 | 0% |
+| 8 | 1% | 28 | 7 | 1.50 | 0.71 | 0.12 | 1.07 | 0% |
+| 8 | 2% | 28 | 7 | 1.52 | 0.60 | 0.32 | 1.00 | 0% |
+| 8 | 5% | 28 | 7 | 1.52 | 0.67 | 0.49 | 1.03 | 0% |
+| 10 | 0% | 45 | 9 | 1.50 | 0.62 | 0.02 | 1.11 | 0% |
+| 10 | 1% | 45 | 9 | 1.47 | 0.60 | 0.13 | 0.85 | 0% |
+| 10 | 2% | 45 | 9 | 1.50 | 0.68 | 0.07 | 0.85 | 0% |
+| 10 | 5% | 45 | 9 | 1.51 | 0.49 | -0.08 | 0.91 | 11% |
+| 12 | 0% | 66 | 11 | 1.45 | 0.51 | 0.22 | 0.76 | 0% |
+| 12 | 1% | 66 | 11 | 1.44 | 0.47 | 0.12 | 0.86 | 0% |
+| 12 | 2% | 66 | 11 | 1.44 | 0.64 | -0.11 | 0.88 | 9% |
+| 12 | 5% | 66 | 11 | 1.47 | 0.70 | 0.35 | 1.07 | 0% |
 
 | Purged k-fold splits | Mean training Sharpe of pick | Stitched out-of-sample Sharpe |
 |---|---|---|
-| 5 | 1.49 | 0.41 |
-| 10 | 1.44 | 1.00 |
+| 5 | 1.45 | 1.08 |
+| 10 | 1.41 | 0.65 |
 
-**Sample period.** The sample is cut into 961-day sub-periods and the light diagnostics are re-run on each. The last column is the Sharpe ratio that the sub-period's winner earned in the rest of the sample.
+**Sample period.** The sample is cut into 1,020-day sub-periods and the light diagnostics are re-run on each. The last column is the Sharpe ratio that the sub-period's winner earned in the rest of the sample.
 
 | Period | Best Sharpe | SR0 | Naive | Holm | SPA p | DSR | PBO | Winner's Sharpe in the other periods |
 |---|---|---|---|---|---|---|---|---|
-| 2018-07-01 to 2021-02-15 | 2.31 | 2.68 | 1,062 | 0 | 0.187 | 0.217 | 0.35 | 0.53 |
-| 2021-02-16 to 2023-10-04 | 1.35 | 1.38 | 58 | 0 | 0.972 | 0.479 | 0.80 | 0.72 |
-| 2023-10-05 to 2026-05-23 | 1.85 | 1.77 | 405 | 0 | 0.506 | 0.575 | 0.58 | 0.77 |
+| 2018-07-01 to 2021-04-15 | 2.40 | 2.85 | 1,353 | 0 | 0.117 | 0.184 | 0.26 | -0.18 |
+| 2021-04-16 to 2024-01-30 | 1.46 | 1.41 | 63 | 0 | 0.884 | 0.536 | 0.61 | -0.26 |
+| 2024-01-31 to 2026-11-15 | 1.48 | 1.56 | 178 | 0 | 0.872 | 0.441 | 0.68 | 0.95 |
 
 **Bootstrap block length.**
 
 | Mean block (days) | Reality Check p | SPA p |
 |---|---|---|
-| 5 | 0.249 | 0.102 |
-| 10 | 0.256 | 0.148 |
-| 20 | 0.258 | 0.139 |
-| 40 | 0.229 | 0.153 |
+| 5 | 0.106 | 0.108 |
+| 10 | 0.115 | 0.132 |
+| 20 | 0.135 | 0.155 |
+| 40 | 0.121 | 0.141 |
 
 **Execution delay.** One extra bar between signal and trade.
 
 | Execution | Best Sharpe | SR0 | Naive | Holm | SPA p | DSR | PBO |
 |---|---|---|---|---|---|---|---|
-| next bar (baseline) | 1.41 | 1.58 | 1,133 | 0 | 0.124 | 0.299 | 0.27 |
-| 2 bars after the signal | 1.47 | 1.58 | 1,081 | 0 | 0.089 | 0.376 | 0.22 |
+| next bar (baseline) | 1.36 | 1.53 | 1,028 | 0 | 0.128 | 0.300 | 0.22 |
+| 2 bars after the signal | 1.44 | 1.53 | 1,021 | 0 | 0.084 | 0.394 | 0.22 |
 
 ![E5 robustness](reports/figures/e5_robustness.png)
 
-Across these settings PBO ranges from 0.24 to 0.30 with the number of blocks, the median CPCV path Sharpe ratio from 0.34 to 0.88, and the SPA p-value from 0.10 to 0.15 with the block length. In the sample-period split no sub-period has a single Holm survivor, and the largest sub-period DSR is 0.58. The sub-period table is the most informative. Each period has a different winner, the last column shows how little of its in-period Sharpe ratio it earned in the rest of the sample, and PBO itself varies widely between periods: it describes the sample as much as the method. The CPCV summaries are the least stable quantity here, which is a reminder that a handful of paths is a small sample.
+Across these settings PBO ranges from 0.18 to 0.25 with the number of blocks, the median CPCV path Sharpe ratio from 0.34 to 0.78, and the SPA p-value from 0.11 to 0.15 with the block length. In the sample-period split no sub-period has a single Holm survivor, and the largest sub-period DSR is 0.54. The sub-period table is the most informative. The naive count differs by more than a factor of ten between periods, the last column shows what each period's winner earned in the rest of the sample, and PBO itself varies widely between periods: it describes the sample as much as the method. The CPCV summaries are the least stable quantity here, which is a reminder that a handful of paths is a small sample.
+
+### 5.6 E3 on one-hour bars
+
+**Setup.** The same 5,000 variants are backtested on one-hour bars (REAL - Binance spot OHLCV (data.binance.vision); 2018-07-01 to 2026-11-15; 73,440 hourly bars per asset). Each variant's hourly returns are summed to daily returns, so the diagnostics see a daily matrix of the same shape as before. Indicator windows are counted in bars, so the same parameter grid now means horizons of 5 to 250 hours. This is a different, faster universe, not the daily one sampled more finely. Costs are unchanged (10 bps per side plus slippage). Only E3 is run on hourly bars (`make data-hourly`, then `make hourly`); E1, E2, E4 and E5 are daily only.
+
+Data checks on the hourly files. Missing hours are filled flat at the previous close with zero volume, as for daily bars:
+
+| Check | Bars affected (all assets) |
+|---|---|
+| duplicates | 0 |
+| bad prices | 0 |
+| gaps | 760 |
+| ohlc inconsistent | 0 |
+| zero volume | 41 |
+| outliers | 750 |
+
+**By family (net).**
+
+| Family | Variants | Median Sharpe | Best Sharpe | Share with Sharpe > 0 | Naively significant | Turnover (x equity / year) |
+|---|---|---|---|---|---|---|
+| ma_cross | 1,360 | -0.04 | 1.12 | 48% | 104 | 313 |
+| tsmom | 520 | -1.39 | 0.73 | 6% | 2 | 1030 |
+| zscore_mr | 1,600 | -1.54 | 0.33 | 1% | 0 | 437 |
+| donchian | 560 | -0.09 | 1.10 | 42% | 48 | 225 |
+| rsi | 960 | -0.51 | 1.03 | 26% | 54 | 233 |
+
+**Per-variant tests.**
+
+| Test on each variant | Gross: survivors | Gross: share | Net: survivors | Net: share |
+|---|---|---|---|---|
+| Naive: p < alpha, no correction | 1,669 | 33.4% | 208 | 4.2% |
+| Benjamini-Hochberg (FDR) | 942 | 18.8% | 0 | 0.0% |
+| Benjamini-Yekutieli (FDR, any dependence) | 86 | 1.7% | 0 | 0.0% |
+| Holm (FWER) | 20 | 0.4% | 0 | 0.0% |
+| Bonferroni (FWER) | 20 | 0.4% | 0 | 0.0% |
+
+**Family-level tests and selection diagnostics.**
+
+| Quantity | Gross | Net | Gross, minus buy-and-hold | Net, minus buy-and-hold |
+|---|---|---|---|---|
+| Best annualised Sharpe ratio | 1.93 | 1.12 | 0.57 | 0.20 |
+| PSR(0) of the best variant (no correction) | 1.0000 | 0.9998 | 0.9459 | 0.7154 |
+| White's Reality Check p-value | 0.032 | 0.546 | 0.745 | 0.976 |
+| Hansen's SPA p-value (consistent) | 0.000 | 0.277 | 0.678 | 0.964 |
+| Expected max Sharpe under the null, SR0 (annualised) | 2.00 | 4.14 | 0.79 | 1.59 |
+| Deflated Sharpe Ratio of the best variant | 0.421 | 0.000 | 0.270 | 0.000 |
+| Probability of Backtest Overfitting | 0.077 | 0.022 | 0.125 | 0.060 |
+
+![E3 on hourly bars: key figure](reports/hourly/figures/e3_key_figure.png)
+
+**Reading the hourly results.** No variant survives: after correcting for the search, the best backtest is indistinguishable from the luckiest of many skill-less strategies. The best net variant is `BNB ma_cross{"fast":20,"ma_type":"ema","mode":"long_only","slow":100}`.
+
+Before costs the fast rules look strong against cash. Tested one at a time 1,669 variants are significant, 20 survive Holm, and SPA rejects (p = 0.00); the best gross Sharpe ratio is 1.93. The paper's DSR does not agree: it is 0.42, because its luck benchmark of 2.00 is built from a wide cross-section of Sharpe ratios. This is the disagreement between SPA and the DSR that the power experiment produced with a planted signal (section 5.2).
+
+After costs the result is gone. Turnover in the family table is one to two orders of magnitude above the daily run's. The median net Sharpe ratio is -0.66, 208 variants (4.2%) pass a naive 5% test, none survive Benjamini-Hochberg and none survive Holm; the SPA p-value is 0.28. The walk-forward rule earns 0.42 against 2.06 in its selection windows, and the median CPCV path Sharpe ratio is 0.09 against 1.25 on the training sets.
+
+Against buy-and-hold, 1 variants are significant before costs and before any correction, 0 after Benjamini-Hochberg, with an SPA p-value of 0.68; after costs the counts are 0 and 0. So the gross evidence is of a positive expected return over cash that fees then remove, and, as in the daily run, not of a return significantly above that of holding the coin. The caution of section 5.3 applies here as well: this is a comparison of mean returns, and the best gross Sharpe ratio (1.93) is above the highest buy-and-hold Sharpe ratio of any asset (0.94).
+
+Two of the hourly numbers need care. The net DSR of 0.00 comes with a luck benchmark of 4.14: costs spread the net Sharpe ratios far apart, and the paper's formula reads that spread as sampling noise. With the theoretical dispersion the benchmark is 1.08 and the DSR 0.54, still short of 0.95. And the net PBO of 0.02 is not good news. Costs differ between variants and persist from one sub-sample to the next, so the ranking of variants is stable for a reason that has nothing to do with skill: the high-turnover variants are reliably at the bottom. PBO measures rank stability and nothing else.
 
 ## 6. Discussion
 
-**How much is selection luck?** In the null worlds, all of it, and the best of 5,000 skill-less variants still shows an annualised Sharpe ratio of 0.97 over 7.9 years. On the real data the best variant does not exceed that kind of benchmark, the walk-forward rule that trades each window's winner earns much less than its in-sample figure, and nothing beats buy-and-hold. The honest summary of the search is "some long exposure to a rising asset class", not "a strategy with a Sharpe ratio of 1.41".
+**How much is selection luck?** In the null worlds, all of it, and the best of 5,000 skill-less variants still shows an annualised Sharpe ratio of 0.97 over 7.9 years. On the real data the best variant does not exceed that kind of benchmark, the walk-forward rule that trades each window's winner earns much less than its in-sample figure, and no variant earns significantly more than buy-and-hold. The honest summary of the search is "some long exposure to assets whose average return was positive", not "a strategy with a Sharpe ratio of 1.36".
 
 **The tools need testing too.** Two textbook recipes failed their null-world check before being fixed: PSR-based p-values under Bonferroni, and long-run studentisation in SPA. A third, cluster counts as the number of trials in the DSR, failed outright, and the power study showed that the DSR's dispersion term can absorb a real signal. None of these is visible on real data, where the truth is unknown. Running every diagnostic on data with a known answer first is the main methodological lesson of the project.
 
 **Control of false positives costs power.** E2 shows that the procedures that stay quiet in the null world also stay quiet for small real edges. With this much data and this many trials only a large true Sharpe ratio is detectable (section 5.2). That is a statement about the evidence, not about markets: a real but small edge cannot be established from a backtest search of this size.
 
-**FWER or FDR?** Holm asks whether any single variant can be trusted and Benjamini-Hochberg asks what fraction of a list can be trusted. They answer different questions, and here they disagree in an informative way: there is a broad, shared effect (which FDR control detects) and no individually outstanding variant (which FWER control requires).
+**FWER or FDR?** Holm asks whether any single variant can be trusted and Benjamini-Hochberg asks what fraction of a list can be trusted. They answer different questions, and here they disagree: Benjamini-Hochberg keeps 34 variants at the baseline fee and Holm keeps 0. That points to a broad, shared effect with no individually outstanding variant. The evidence for even the broad effect is thin, though: the Benjamini-Hochberg survivors disappear under the Benjamini-Yekutieli version and as the fee rises (section 5.4).
+
+**Frequency and costs.** The hourly run is the clearest example in the project of why gross and net results must both be shown. Before costs, family-wise corrections leave 20 survivors; after 10 bps per side they leave 0, and the typical variant loses money. A search that reported only gross hourly results would have reported a discovery.
 
 ## 7. Limitations
 
 The main ones are listed here; [LIMITATIONS.md](LIMITATIONS.md) gives the full list.
 
 - The asset list is survivorship-biased: coins that were large and still trading at the end of the sample.
-- The data in this run is close-only daily prices from one aggregated source, not exchange OHLCV, and hourly bars were not analysed.
+- The data is one exchange's spot bars. Hourly bars were analysed for E3 only, and the same parameter grid means much shorter horizons there.
+- The comparison with buy-and-hold is a difference of mean returns, not a risk-adjusted comparison.
 - Costs are a simple model: a flat fee plus volatility-proportional slippage, no funding costs for shorts, no market impact, no borrowing constraints.
 - The benchmark for most tests is cash. Long-only variants earn the market's drift; section 5.3 addresses this with an active-return analysis but does not model risk-adjusted benchmarks.
 - The universe is five technical families. The conclusions are about this search, not about systematic trading in general.

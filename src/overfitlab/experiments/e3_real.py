@@ -3,7 +3,8 @@
 Loads the market (Binance cache, else CoinMetrics cache, else the synthetic stand-in -
 the source actually used is recorded in the results and printed in every report),
 backtests all variants and runs every diagnostic on the NET return matrix. The gross
-matrix gets the light diagnostics for comparison.
+matrix gets the light diagnostics for comparison, and so do the ACTIVE returns (each
+variant minus buy-and-hold of its own asset), net and gross.
 
 Headline: how many of N variants survive each correction, the PBO, and the Deflated
 Sharpe Ratio of the best variant.
@@ -121,8 +122,14 @@ def survival_table(net: dict, gross: dict) -> str:
     )
 
 
-def family_level_table(net: dict, gross: dict, vs_hold: dict | None = None) -> str:
-    """Family-level tests and selection diagnostics, gross and net."""
+def family_level_table(
+    net: dict, gross: dict, vs_hold: dict | None = None, gross_vs_hold: dict | None = None
+) -> str:
+    """Family-level tests and selection diagnostics, gross and net.
+
+    The optional columns repeat the analysis on active returns (variant minus
+    buy-and-hold of its own asset), before and after costs.
+    """
 
     def col(d: dict) -> list[str]:
         return [
@@ -146,6 +153,9 @@ def family_level_table(net: dict, gross: dict, vs_hold: dict | None = None) -> s
     ]
     cols = [col(gross), col(net)]
     head = ["Quantity", "Gross", "Net"]
+    if gross_vs_hold is not None:
+        cols.append(col(gross_vs_hold))
+        head.append("Gross, minus buy-and-hold")
     if vs_hold is not None:
         cols.append(col(vs_hold))
         head.append("Net, minus buy-and-hold")
@@ -173,12 +183,38 @@ def neff_table(out: dict) -> str:
     return md_table(["Estimator of N", "Effective N", "SR0 (annualised)", "DSR of best"], rows)
 
 
+def _join(names: list[str]) -> str:
+    """``["A"] -> "A"``, ``["A", "B"] -> "A and B"``, ``["A", "B", "C"] -> "A, B and C"``."""
+    if len(names) <= 1:
+        return "".join(names)
+    return ", ".join(names[:-1]) + " and " + names[-1]
+
+
+def top10_summary(top10: list[dict], assets: list[dict]) -> dict:
+    """Where the ten best variants come from, for the prose of the report."""
+    in_top = list(dict.fromkeys(r["asset"] for r in top10))
+    by_hold = sorted(assets, key=lambda r: r["buy_hold_sharpe"], reverse=True)
+    rank = {r["asset"]: i + 1 for i, r in enumerate(by_hold)}
+    return {
+        "assets_text": _join(in_top),
+        "n_assets": len(in_top),
+        "n_long_only": sum("long_only" in r["label"] for r in top10),
+        "worst_hold_rank": max(rank[a] for a in in_top),
+        "n_hold_sharpe_positive": sum(r["buy_hold_sharpe"] > 0 for r in assets),
+        "n_total_return_positive": sum(r["total_return"] > 0 for r in assets),
+        "best_hold_asset": by_hold[0]["asset"],
+        "best_hold_sharpe": by_hold[0]["buy_hold_sharpe"],
+    }
+
+
 def verdict(net: dict) -> dict:
     """Plain-language reading of the net results, generated from the numbers."""
     alpha = net["alpha"]
     holm = net["survivors"]["holm"]
     bh = net["survivors"]["bh"]
     spa = net["snooping"]["spa_p"]
+    holm_psr = net["survivors_psr"]["holm"]
+    spa_hac = net["snooping"]["spa_hac_p"]
     dsr = net["dsr_primary"]["dsr"]
     pbo = net["pbo"]["pbo"]
     checks = {
@@ -210,6 +246,17 @@ def verdict(net: dict) -> dict:
         if bh
         else "none survive Benjamini-Hochberg",
         "spa_text": "rejects" if checks["spa"] else "does not reject",
+        # Do the two corrections adopted after the null-world validation change a decision?
+        "pvalue_fix_text": (
+            "changes the family-wise answer"
+            if (holm_psr > 0) != (holm > 0)
+            else "does not change whether anything survives Holm"
+        ),
+        "spa_scale_text": (
+            "changes the SPA decision at the 5% level"
+            if (spa_hac < alpha) != (spa < alpha)
+            else "does not change the SPA decision at the 5% level"
+        ),
         "dsr_text": "above" if checks["dsr"] else "below",
         "pbo_text": (
             "the in-sample winner usually stays in the top half out of sample"
@@ -238,10 +285,15 @@ def run(cfg: dict) -> dict:
     # Same diagnostics on ACTIVE returns: each variant minus buy-and-hold of its own
     # asset. This asks "does anything beat simply holding the coin?", which strips out
     # the market's own drift that long-only variants earn without any timing skill.
-    active = net_matrix - buy_and_hold_matrix(uni, prices, cfg)
+    hold = buy_and_hold_matrix(uni, prices, cfg)
     primary = cfg["diagnostics"]["trials"]["primary"]
+    active = net_matrix - hold
     vs_hold, _ = diagnose(active, cfg, seed=seed + 1, heavy=False, neff_methods=(primary,))
-    del active
+    # The same before costs: is there anything in the signals themselves, beyond the
+    # asset's drift, that costs then remove?
+    active = uni.gross - hold
+    gross_vs_hold, _ = diagnose(active, cfg, seed=seed + 2, heavy=False, neff_methods=(primary,))
+    del active, hold
 
     best = describe_variant(uni.meta, net["sharpe"]["best_index"])
     best_gross = describe_variant(uni.meta, gross["sharpe"]["best_index"])
@@ -259,7 +311,7 @@ def run(cfg: dict) -> dict:
 
     tables = {
         "survival_md": survival_table(net, gross),
-        "family_level_md": family_level_table(net, gross, vs_hold),
+        "family_level_md": family_level_table(net, gross, vs_hold, gross_vs_hold),
         "neff_md": neff_table(net),
         "families_md": md_table(
             [
@@ -316,11 +368,13 @@ def run(cfg: dict) -> dict:
         "net": net,
         "gross": gross,
         "vs_buy_hold": vs_hold,
+        "gross_vs_buy_hold": gross_vs_hold,
         "best": best,
         "best_gross": best_gross,
         "top10": top10,
         "families": families,
         "assets": assets,
+        "top10_summary": top10_summary(top10, assets),
         "verdict": verdict(net),
         "tables": tables,
     }
