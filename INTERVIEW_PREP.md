@@ -72,7 +72,7 @@ Correct, and it is the first thing I would raise myself. I ran the same tests on
 Yes. The coins were chosen for being large and long-lived, which flatters long-only results. Even with that tailwind nothing survives family-wise correction, so the bias does not rescue the strategies, but the size of the broad effect that FDR control picks up is overstated. A point-in-time universe is in NEXT_STEPS.
 
 **"You used CoinMetrics closes, not exchange OHLCV, and no hourly data."**
-True for the committed run, because of the build environment. The downloader, parser and hourly path are implemented and unit-tested, and the real-data swap is one command, but I have not yet seen results on Binance data. I would re-run before quoting the numbers as exchange-level results.
+True for the committed run, because of the build environment. The downloader is tested end to end over HTTP against a local replica of the Binance site, whose layout I confirmed on the live site, and the hourly path has been run at full size on synthetic hourly bars. The real-data swap is one command. Until that has been run, say plainly that the numbers are from daily reference prices and that you have not seen exchange-level or hourly results.
 
 **"You modified two published methods."**
 I did, and I kept the originals in the output so the effect is visible. Both changes were forced by a failed null test, the mechanism is reproduced by unit tests, and they are documented. The alternative, using a method I had seen over-reject, would be worse. I am open to the criticism that my Monte Carlo is small.

@@ -83,7 +83,7 @@ A large shock yesterday raises variance today ($`\alpha`$), and high variance pe
 | `data/synthetic.py` | `simulate_returns` | the model above; returns the returns, volatilities and hidden state |
 | | `returns_to_ohlcv` | turns a return path into OHLCV bars |
 | | `simulate_market` | several assets at once |
-| `data/binance.py` | `kline_url`, `parse_kline_zip`, `verify_checksum`, `download_symbol` | monthly archives, SHA-256 check, millisecond/microsecond timestamps |
+| `data/binance.py` | `kline_url`, `parse_kline_zip`, `verify_checksum`, `download_symbol`, `check_source` | monthly and daily archives, SHA-256 check, millisecond/microsecond timestamps, per-month cache, pre-flight check (`make data-check`) |
 | `data/coinmetrics.py` | `parse_coinmetrics_csv` | fallback source, close-only bars |
 | `data/loader.py` | `validate_ohlcv` | duplicates, bad prices, gaps, OHLC consistency, zero volume, outliers |
 | | `load_market` | picks the source, validates, aligns all assets on one calendar |
@@ -97,6 +97,7 @@ A large shock yesterday raises variance today ($`\alpha`$), and high variance pe
 - **Deleting real crashes.** Outliers are logged but not altered by default.
 - **Timestamp unit change.** Binance spot files switched from milliseconds to microseconds in 2025; the parser detects the unit from the magnitude.
 - **Misaligned assets.** All assets are trimmed to the common window so every column of the matrix has the same T rows.
+- **A downloader that has only ever been unit-tested.** `tests/test_binance_replica.py` starts a local web server that copies the layout of the real site and runs the actual download code against it, including missing months (HTTP 404), a wrong checksum, and a month whose monthly archive is not published yet.
 
 ### Interview questions
 

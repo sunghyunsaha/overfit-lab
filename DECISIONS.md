@@ -15,7 +15,9 @@ The spec's primary source is Binance bulk data. The build machine's network poli
 
 **A5. Missing bars are filled flat with zero volume.** Alternatives: drop the bar (misaligns assets) or interpolate (invents prices). A flat bar gives a zero return and cannot trigger a signal.
 
-**A6. Diagnostics always run on daily returns; hourly strategies are aggregated.** The spec asks for daily and 1-hour data and for one T x N matrix. A matrix needs one time index, so hourly backtests are summed to daily P&L. The hourly path is implemented and tested on synthetic bars but has not been run on real hourly data (see NEXT_STEPS).
+**A6. Diagnostics always run on daily returns; hourly strategies are aggregated.** The spec asks for daily and 1-hour data and for one T x N matrix. A matrix needs one time index, so hourly backtests are summed to daily P&L. Indicator windows are counted in bars, so on hourly bars the same grid means horizons of 5 to 250 hours; that is a different, faster universe, not the daily one sampled more finely. The hourly path has been run at full size on synthetic bars but not on real hourly data (see NEXT_STEPS).
+
+**A7. The downloader is tested against a local replica, and can be pointed at one.** The live host was unreachable during the build, so `data.binance_base_url` and a `today` argument make the download code runnable against a small HTTP server that reproduces the site's layout (confirmed by browsing the live site). This tests everything except the contents of a real archive. Months are fetched by a thread pool because the work is network I/O; `make data-check` probes the first and last month of every symbol before a bulk download.
 
 ## B. Synthetic markets
 

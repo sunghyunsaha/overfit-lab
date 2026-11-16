@@ -6,7 +6,7 @@ What this project does not show, and where its results should not be stretched.
 
 - **Survivorship bias in the asset list.** The ten coins were chosen because they were large and long-lived. Coins that collapsed or were delisted are absent, which flatters long-only results. A proper study would fix the universe at each point in time using only information available then.
 - **The committed run uses close-only daily reference prices.** They come from the CoinMetrics community dataset, not from an exchange order book. There is no intraday high or low (Donchian channels are built from closes), no bid-ask spread, and the price is an aggregate that nobody could trade at exactly.
-- **Hourly data was not analysed.** The pipeline supports 1-hour bars and aggregates them to daily returns, and this path is tested on synthetic bars, but no real hourly data was available on the build machine.
+- **Hourly data was not analysed.** The pipeline supports 1-hour bars and aggregates them to daily returns. That path has been run at full size on synthetic hourly bars and tested against a local replica of the Binance site, but no real hourly data was available on the build machine, so there are no hourly results.
 - **One asset class, one period.** Crypto from mid-2018 onwards contains two large bull markets and two deep drawdowns. Results say nothing about equities, futures or other periods.
 - **Short history.** About eight years of daily data is roughly 2,900 observations. Sharpe ratios estimated on that much data have a standard error of about 0.35 in annualised terms, so only large effects can be resolved at all.
 - **The data ends when the source snapshot ends.** The fallback dataset stopped updating before the build date, so the most recent months are missing.

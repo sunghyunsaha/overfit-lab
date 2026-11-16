@@ -47,11 +47,13 @@ One finding came from validating the tools rather than from the data: plugging t
 
 ```bash
 python -m venv .venv && source .venv/bin/activate
-make install          # pinned dependencies (tested on Python 3.13)
+make install          # pinned dependencies (tested on Python 3.11, 3.12 and 3.13)
 make test             # full test suite
 make demo             # under 2 minutes, small synthetic sample -> reports/demo/
+make data-check       # 10-second check that Binance is reachable and every symbol has data
 make data             # Binance OHLCV -> data/   (or: make data-fallback for CoinMetrics)
 make all              # E1-E5, figures, README.md and REPORT.md re-rendered from results
+make data-hourly && make hourly   # optional: E3 on 1-hour Binance bars -> reports/hourly/
 ```
 
 Runs are driven by YAML (`configs/base.yaml` plus an override file) and a fixed seed, so the same config gives the same numbers. `make figures` redraws every figure from saved results without recomputing, and `make docs` re-renders the documents.
@@ -95,4 +97,5 @@ reports/figures/         all figures
 - **Purging and embargo:** brute-force check that no training observation overlaps a test label window (`tests/test_cv.py`).
 - **Reality Check / SPA:** size under the null, power, and the closed-form variance against the bootstrap variance (`tests/test_bootstrap.py`).
 - **Multiple testing:** agreement with `statsmodels` (`tests/test_multiple.py`).
+- **Downloader:** the real download code run over HTTP against a local replica of the Binance site: 404s, checksums, both timestamp formats, the month cache, the daily-file fallback (`tests/test_binance_replica.py`).
 - **Documents:** the committed README and REPORT equal the templates rendered from the committed results (`tests/test_docs.py`).
