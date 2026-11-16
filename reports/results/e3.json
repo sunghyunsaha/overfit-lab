@@ -2,6 +2,7 @@
   "data": {
     "source": "coinmetrics",
     "label": "REAL - CoinMetrics community daily reference prices (close-only)",
+    "note": "The primary source in the spec is Binance spot OHLCV (`data.binance.vision`). The machine this run was made on could not reach that host, so this run uses the fallback: real daily prices from the CoinMetrics community dataset (one reference price per day, no intraday high or low, so Donchian channels are channels of daily closes). Binance data replaces it with `make data && make all`.",
     "is_real": true,
     "interval": "1d",
     "symbols": [
@@ -70,7 +71,8 @@
       "bonferroni": 1,
       "holm": 1,
       "bh": 366,
-      "by": 0
+      "by": 0,
+      "most_significant_active_bars": 1588
     },
     "neff": {
       "raw": 4984.0,
@@ -78,8 +80,8 @@
       "avg_corr_value": 0.07309215629161073,
       "eigen": 14.320030518724767,
       "cluster": 2.0,
-      "max_matching": 591.1214599843244,
-      "sim_expected_max": 3.102504296498189
+      "max_matching": 579.4265683312823,
+      "sim_expected_max": 3.0965755310098895
     },
     "dsr": {
       "raw": {
@@ -103,27 +105,28 @@
         "n_trials": 14.320030518724767
       },
       "max_matching": {
-        "dsr": 0.29490320745476817,
-        "sr0_annual": 1.5834019416575524,
-        "n_trials": 591.1214599843244
+        "dsr": 0.29818841428219056,
+        "sr0_annual": 1.580376121904014,
+        "n_trials": 579.4265683312823
       }
     },
     "dsr_primary": {
       "method": "max_matching",
-      "dsr": 0.29490320745476817,
-      "sr0_annual": 1.5834019416575524,
-      "n_trials": 591.1214599843244
+      "dsr": 0.29818841428219056,
+      "sr0_annual": 1.580376121904014,
+      "n_trials": 579.4265683312823
     },
     "dsr_null_dispersion": {
-      "dsr": 0.8329965114315749,
-      "sr0_annual": 1.1039172064863851
+      "dsr": 0.8346479414206566,
+      "sr0_annual": 1.1018076634816818
     },
     "snooping": {
-      "rc_p": 0.259,
-      "spa_lower_p": 0.128,
-      "spa_p": 0.133,
-      "spa_upper_p": 0.134,
-      "spa_hac_p": 0.247,
+      "rc_p": 0.257,
+      "spa_lower_p": 0.112,
+      "spa_p": 0.121,
+      "spa_upper_p": 0.121,
+      "spa_hac_p": 0.236,
+      "hac_scale_ratio": 1.1091197214969073,
       "best_t_index": 1004,
       "n_boot": 1000,
       "mean_block": 10
@@ -175,9 +178,9 @@
     },
     "min_btl": {
       "years_available": 7.901369863013699,
-      "years_needed_primary": 4.8301655215630035,
+      "years_needed_primary": 4.811722641945844,
       "years_needed_raw": 6.821136820160587,
-      "expected_max_annual_primary": 1.1037258034149013,
+      "expected_max_annual_primary": 1.1016166261740508,
       "expected_max_annual_raw": 1.3116216282513504,
       "max_trials_allowed": 15603.215344377451
     },
@@ -203,9 +206,9 @@
         "haircut": 0.0
       },
       "bonferroni_neff": {
-        "p_adjusted": 0.042825574193197706,
-        "sharpe_annual": 0.720545055475207,
-        "haircut": 0.48957756211526837
+        "p_adjusted": 0.04197830255095003,
+        "sharpe_annual": 0.7235077818028244,
+        "haircut": 0.4874788148080227
       }
     }
   },
@@ -243,7 +246,8 @@
       "bonferroni": 5,
       "holm": 5,
       "bh": 520,
-      "by": 0
+      "by": 0,
+      "most_significant_active_bars": 1546
     },
     "neff": {
       "raw": 4984.0,
@@ -251,8 +255,8 @@
       "avg_corr_value": 0.073133840557575,
       "eigen": 14.315596319152242,
       "cluster": 2.0,
-      "max_matching": 590.5609594670849,
-      "sim_expected_max": 3.1022230562243553
+      "max_matching": 578.7863013834501,
+      "sim_expected_max": 3.0962472140835144
     },
     "dsr": {
       "raw": {
@@ -276,27 +280,28 @@
         "n_trials": 14.315596319152242
       },
       "max_matching": {
-        "dsr": 0.3326927147947112,
-        "sr0_annual": 1.5706509355591085,
-        "n_trials": 590.5609594670849
+        "dsr": 0.33615289161308703,
+        "sr0_annual": 1.5676253755400036,
+        "n_trials": 578.7863013834501
       }
     },
     "dsr_primary": {
       "method": "max_matching",
-      "dsr": 0.3326927147947112,
-      "sr0_annual": 1.5706509355591085,
-      "n_trials": 590.5609594670849
+      "dsr": 0.33615289161308703,
+      "sr0_annual": 1.5676253755400036,
+      "n_trials": 578.7863013834501
     },
     "dsr_null_dispersion": {
-      "dsr": 0.8494289045159527,
-      "sr0_annual": 1.1038171370109684
+      "dsr": 0.850984818893891,
+      "sr0_annual": 1.1016908434325967
     },
     "snooping": {
-      "rc_p": 0.224,
-      "spa_lower_p": 0.111,
-      "spa_p": 0.115,
-      "spa_upper_p": 0.116,
-      "spa_hac_p": 0.129,
+      "rc_p": 0.212,
+      "spa_lower_p": 0.101,
+      "spa_p": 0.111,
+      "spa_upper_p": 0.111,
+      "spa_hac_p": 0.125,
+      "hac_scale_ratio": 1.0036911128923516,
       "best_t_index": 1004,
       "n_boot": 1000,
       "mean_block": 10
@@ -346,12 +351,13 @@
       "bonferroni": 0,
       "holm": 0,
       "bh": 0,
-      "by": 0
+      "by": 0,
+      "most_significant_active_bars": 1573
     },
     "neff": {
       "raw": 5000.0,
-      "max_matching": 45.2243674561174,
-      "sim_expected_max": 2.2375728080044737
+      "max_matching": 42.681023517313044,
+      "sim_expected_max": 2.214998848219714
     },
     "dsr": {
       "raw": {
@@ -360,27 +366,28 @@
         "n_trials": 5000.0
       },
       "max_matching": {
-        "dsr": 0.16576418311465435,
-        "sr0_annual": 0.6767854940048668,
-        "n_trials": 45.2243674561174
+        "dsr": 0.17062329283758793,
+        "sr0_annual": 0.6699576810863656,
+        "n_trials": 42.681023517313044
       }
     },
     "dsr_primary": {
       "method": "max_matching",
-      "dsr": 0.16576418311465435,
-      "sr0_annual": 0.6767854940048668,
-      "n_trials": 45.2243674561174
+      "dsr": 0.17062329283758793,
+      "sr0_annual": 0.6699576810863656,
+      "n_trials": 42.681023517313044
     },
     "dsr_null_dispersion": {
-      "dsr": 0.09525220590584982,
-      "sr0_annual": 0.796161709207046
+      "dsr": 0.09916168694948518,
+      "sr0_annual": 0.7881295583239468
     },
     "snooping": {
-      "rc_p": 0.941,
-      "spa_lower_p": 0.802,
-      "spa_p": 0.962,
-      "spa_upper_p": 0.973,
-      "spa_hac_p": 0.946,
+      "rc_p": 0.93,
+      "spa_lower_p": 0.765,
+      "spa_p": 0.955,
+      "spa_upper_p": 0.965,
+      "spa_hac_p": 0.942,
+      "hac_scale_ratio": 0.9179407586396641,
       "best_t_index": 4681,
       "n_boot": 1000,
       "mean_block": 10
@@ -634,8 +641,8 @@
   },
   "tables": {
     "survival_md": "| Test on each variant | Gross: survivors | Gross: share | Net: survivors | Net: share |\n|---|---|---|---|---|\n| Naive: p < alpha, no correction | 1,246 | 24.9% | 1,133 | 22.7% |\n| Benjamini-Hochberg (FDR) | 384 | 7.7% | 199 | 4.0% |\n| Benjamini-Yekutieli (FDR, any dependence) | 0 | 0.0% | 0 | 0.0% |\n| Holm (FWER) | 0 | 0.0% | 0 | 0.0% |\n| Bonferroni (FWER) | 0 | 0.0% | 0 | 0.0% |",
-    "family_level_md": "| Quantity | Gross | Net | Net, minus buy-and-hold |\n|---|---|---|---|\n| Best annualised Sharpe ratio | 1.43 | 1.41 | 0.33 |\n| PSR(0) of the best variant (no correction) | 1.0000 | 1.0000 | 0.8278 |\n| White's Reality Check p-value | 0.224 | 0.259 | 0.941 |\n| Hansen's SPA p-value (consistent) | 0.115 | 0.133 | 0.962 |\n| Expected max Sharpe under the null, SR0 (annualised) | 1.57 | 1.58 | 0.68 |\n| Deflated Sharpe Ratio of the best variant | 0.333 | 0.295 | 0.166 |\n| Probability of Backtest Overfitting | 0.256 | 0.272 | 0.410 |",
-    "neff_md": "| Estimator of N | Effective N | SR0 (annualised) | DSR of best |\n|---|---|---|---|\n| Raw count (variants that traded) | 4,984 | 1.88 | 0.070 |\n| Average correlation (Bailey & Lopez de Prado 2014) | 4,620 | 1.87 | 0.074 |\n| Max-matching simulation (this project) | 591 | 1.58 | 0.295 |\n| Clustering (simplified ONC) | 2 | 0.27 | 1.000 |\n| Eigenvalue participation ratio | 14 | 0.89 | 0.948 |",
+    "family_level_md": "| Quantity | Gross | Net | Net, minus buy-and-hold |\n|---|---|---|---|\n| Best annualised Sharpe ratio | 1.43 | 1.41 | 0.33 |\n| PSR(0) of the best variant (no correction) | 1.0000 | 1.0000 | 0.8278 |\n| White's Reality Check p-value | 0.212 | 0.257 | 0.930 |\n| Hansen's SPA p-value (consistent) | 0.111 | 0.121 | 0.955 |\n| Expected max Sharpe under the null, SR0 (annualised) | 1.57 | 1.58 | 0.67 |\n| Deflated Sharpe Ratio of the best variant | 0.336 | 0.298 | 0.171 |\n| Probability of Backtest Overfitting | 0.256 | 0.272 | 0.410 |",
+    "neff_md": "| Estimator of N | Effective N | SR0 (annualised) | DSR of best |\n|---|---|---|---|\n| Raw count (variants that traded) | 4,984 | 1.88 | 0.070 |\n| Average correlation (Bailey & Lopez de Prado 2014) | 4,620 | 1.87 | 0.074 |\n| Max-matching simulation (this project) | 579 | 1.58 | 0.298 |\n| Clustering (simplified ONC) | 2 | 0.27 | 1.000 |\n| Eigenvalue participation ratio | 14 | 0.89 | 0.948 |",
     "families_md": "| Family | Variants | Median Sharpe | Best Sharpe | Share with Sharpe > 0 | Naively significant | Turnover (x equity / year) |\n|---|---|---|---|---|---|---|\n| ma_cross | 1,360 | 0.46 | 1.41 | 89% | 517 | 11 |\n| tsmom | 520 | 0.48 | 1.35 | 91% | 198 | 36 |\n| zscore_mr | 1,600 | -0.15 | 0.75 | 35% | 18 | 16 |\n| donchian | 560 | 0.43 | 1.26 | 85% | 201 | 11 |\n| rsi | 960 | 0.22 | 1.35 | 68% | 199 | 9 |",
     "top10_md": "| Rank | Variant | Net Sharpe (annualised) | Unadjusted p-value |\n|---|---|---|---|\n| 1 | `BNB ma_cross{\"fast\":5,\"ma_type\":\"sma\",\"mode\":\"long_only\",\"slow\":50}` | 1.41 | 3.6e-05 |\n| 2 | `BNB ma_cross{\"fast\":5,\"ma_type\":\"sma\",\"mode\":\"long_only\",\"slow\":50} +voltarget` | 1.36 | 6.8e-05 |\n| 3 | `BNB ma_cross{\"fast\":10,\"ma_type\":\"sma\",\"mode\":\"long_only\",\"slow\":50}` | 1.36 | 6.9e-05 |\n| 4 | `ADA rsi{\"band\":30,\"mode\":\"long_only\",\"period\":14,\"style\":\"trend\"} +voltarget` | 1.35 | 7e-05 |\n| 5 | `BNB ma_cross{\"fast\":5,\"ma_type\":\"ema\",\"mode\":\"long_only\",\"slow\":50} +voltarget` | 1.35 | 7.4e-05 |\n| 6 | `BTC tsmom{\"lookback\":40,\"mode\":\"long_only\"}` | 1.35 | 7.7e-05 |\n| 7 | `BTC tsmom{\"lookback\":40,\"mode\":\"long_only\"} +voltarget` | 1.34 | 7.9e-05 |\n| 8 | `BNB ma_cross{\"fast\":10,\"ma_type\":\"ema\",\"mode\":\"long_only\",\"slow\":50} +voltarget` | 1.32 | 0.0001 |\n| 9 | `BNB ma_cross{\"fast\":5,\"ma_type\":\"ema\",\"mode\":\"long_only\",\"slow\":50}` | 1.32 | 0.0001 |\n| 10 | `BNB ma_cross{\"fast\":5,\"ma_type\":\"sma\",\"mode\":\"long_only\",\"slow\":20} +voltarget` | 1.31 | 0.00012 |",
     "assets_md": "| Asset | Buy-and-hold Sharpe | Annualised volatility | Total return |\n|---|---|---|---|\n| BTC | 0.82 | 62% | +1104% |\n| ETH | 0.65 | 83% | +368% |\n| BNB | 0.99 | 84% | +4470% |\n| XRP | 0.62 | 101% | +194% |\n| ADA | 0.55 | 99% | +71% |\n| LTC | 0.38 | 88% | -33% |\n| TRX | 0.75 | 87% | +889% |\n| XLM | 0.43 | 100% | -26% |\n| ETC | 0.42 | 101% | -44% |\n| NEO | 0.21 | 101% | -91% |",

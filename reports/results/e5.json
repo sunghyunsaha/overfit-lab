@@ -3,6 +3,7 @@
   "data": {
     "source": "coinmetrics",
     "label": "REAL - CoinMetrics community daily reference prices (close-only)",
+    "note": "The primary source in the spec is Binance spot OHLCV (`data.binance.vision`). The machine this run was made on could not reach that host, so this run uses the fallback: real daily prices from the CoinMetrics community dataset (one reference price per day, no intraday high or low, so Donchian channels are channels of daily closes). Binance data replaces it with `make data && make all`.",
     "is_real": true,
     "interval": "1d",
     "symbols": [
@@ -340,12 +341,13 @@
         "bonferroni": 8,
         "holm": 8,
         "bh": 294,
-        "by": 7
+        "by": 7,
+        "most_significant_active_bars": 398
       },
       "neff": {
         "raw": 4978.0,
-        "max_matching": 450.64481214668297,
-        "sim_expected_max": 3.021146030736246
+        "max_matching": 477.8621258857769,
+        "sim_expected_max": 3.038887540194207
       },
       "dsr": {
         "raw": {
@@ -354,27 +356,28 @@
           "n_trials": 4978.0
         },
         "max_matching": {
-          "dsr": 0.22723822901083962,
-          "sr0_annual": 2.668804482143159,
-          "n_trials": 450.64481214668297
+          "dsr": 0.2174031715900846,
+          "sr0_annual": 2.6844768857541346,
+          "n_trials": 477.8621258857769
         }
       },
       "dsr_primary": {
         "method": "max_matching",
-        "dsr": 0.22723822901083962,
-        "sr0_annual": 2.668804482143159,
-        "n_trials": 450.64481214668297
+        "dsr": 0.2174031715900846,
+        "sr0_annual": 2.6844768857541346,
+        "n_trials": 477.8621258857769
       },
       "dsr_null_dispersion": {
-        "dsr": 0.8289605440451485,
-        "sr0_annual": 1.8628699349466973
+        "dsr": 0.8230410871705104,
+        "sr0_annual": 1.873809533441298
       },
       "snooping": {
-        "rc_p": 0.056,
-        "spa_lower_p": 0.161,
-        "spa_p": 0.18,
-        "spa_upper_p": 0.18,
-        "spa_hac_p": 0.246,
+        "rc_p": 0.051,
+        "spa_lower_p": 0.178,
+        "spa_p": 0.187,
+        "spa_upper_p": 0.189,
+        "spa_hac_p": 0.232,
+        "hac_scale_ratio": 0.9915737192803971,
         "best_t_index": 432,
         "n_boot": 1000,
         "mean_block": 10
@@ -426,12 +429,13 @@
         "bonferroni": 0,
         "holm": 0,
         "bh": 0,
-        "by": 0
+        "by": 0,
+        "most_significant_active_bars": 95
       },
       "neff": {
         "raw": 4946.0,
-        "max_matching": 563.8569786789631,
-        "sim_expected_max": 3.088478236675259
+        "max_matching": 539.9434191700404,
+        "sim_expected_max": 3.075557611783745
       },
       "dsr": {
         "raw": {
@@ -440,27 +444,28 @@
           "n_trials": 4946.0
         },
         "max_matching": {
-          "dsr": 0.4749224746733735,
-          "sr0_annual": 1.3822727526912062,
-          "n_trials": 563.8569786789631
+          "dsr": 0.479426551014808,
+          "sr0_annual": 1.3764900252874046,
+          "n_trials": 539.9434191700404
         }
       },
       "dsr_primary": {
         "method": "max_matching",
-        "dsr": 0.4749224746733735,
-        "sr0_annual": 1.3822727526912062,
-        "n_trials": 563.8569786789631
+        "dsr": 0.479426551014808,
+        "sr0_annual": 1.3764900252874046,
+        "n_trials": 539.9434191700404
       },
       "dsr_null_dispersion": {
-        "dsr": 0.13919523957019042,
-        "sr0_annual": 1.904387670541509
+        "dsr": 0.14267863754836813,
+        "sr0_annual": 1.896420679404296
       },
       "snooping": {
-        "rc_p": 0.559,
-        "spa_lower_p": 0.922,
-        "spa_p": 0.964,
-        "spa_upper_p": 0.966,
-        "spa_hac_p": 0.702,
+        "rc_p": 0.553,
+        "spa_lower_p": 0.926,
+        "spa_p": 0.972,
+        "spa_upper_p": 0.973,
+        "spa_hac_p": 0.731,
+        "hac_scale_ratio": 0.7747805597468443,
         "best_t_index": 4208,
         "n_boot": 1000,
         "mean_block": 10
@@ -512,12 +517,13 @@
         "bonferroni": 1,
         "holm": 1,
         "bh": 1,
-        "by": 0
+        "by": 0,
+        "most_significant_active_bars": 592
       },
       "neff": {
         "raw": 4948.0,
-        "max_matching": 465.4671176516778,
-        "sim_expected_max": 3.0309476754280826
+        "max_matching": 451.9013207165522,
+        "sim_expected_max": 3.021990416772904
       },
       "dsr": {
         "raw": {
@@ -526,27 +532,28 @@
           "n_trials": 4948.0
         },
         "max_matching": {
-          "dsr": 0.5705492551815867,
-          "sr0_annual": 1.7769193018594154,
-          "n_trials": 465.4671176516778
+          "dsr": 0.5753662917818987,
+          "sr0_annual": 1.7716680314646323,
+          "n_trials": 451.9013207165522
         }
       },
       "dsr_primary": {
         "method": "max_matching",
-        "dsr": 0.5705492551815867,
-        "sr0_annual": 1.7769193018594154,
-        "n_trials": 465.4671176516778
+        "dsr": 0.5753662917818987,
+        "sr0_annual": 1.7716680314646323,
+        "n_trials": 451.9013207165522
       },
       "dsr_null_dispersion": {
-        "dsr": 0.4860042304916554,
-        "sr0_annual": 1.8679410978224564
+        "dsr": 0.4911522688960245,
+        "sr0_annual": 1.8624208337474761
       },
       "snooping": {
-        "rc_p": 0.921,
-        "spa_lower_p": 0.436,
-        "spa_p": 0.483,
-        "spa_upper_p": 0.485,
-        "spa_hac_p": 0.441,
+        "rc_p": 0.911,
+        "spa_lower_p": 0.438,
+        "spa_p": 0.506,
+        "spa_upper_p": 0.51,
+        "spa_hac_p": 0.41,
+        "hac_scale_ratio": 0.8663351834474421,
         "best_t_index": 3430,
         "n_boot": 1000,
         "mean_block": 10
@@ -568,23 +575,23 @@
   "block_length": [
     {
       "mean_block": 5,
-      "rc_p": 0.234,
-      "spa_p": 0.106
+      "rc_p": 0.249,
+      "spa_p": 0.102
     },
     {
       "mean_block": 10,
-      "rc_p": 0.258,
-      "spa_p": 0.132
+      "rc_p": 0.256,
+      "spa_p": 0.148
     },
     {
       "mean_block": 20,
       "rc_p": 0.258,
-      "spa_p": 0.147
+      "spa_p": 0.139
     },
     {
       "mean_block": 40,
-      "rc_p": 0.257,
-      "spa_p": 0.15
+      "rc_p": 0.229,
+      "spa_p": 0.153
     }
   ],
   "lag": {
@@ -622,12 +629,13 @@
         "bonferroni": 1,
         "holm": 1,
         "bh": 366,
-        "by": 0
+        "by": 0,
+        "most_significant_active_bars": 1588
       },
       "neff": {
         "raw": 4984.0,
-        "max_matching": 562.7713493413999,
-        "sim_expected_max": 3.0879046285724834
+        "max_matching": 577.5899244238115,
+        "sim_expected_max": 3.095632679244416
       },
       "dsr": {
         "raw": {
@@ -636,27 +644,28 @@
           "n_trials": 4984.0
         },
         "max_matching": {
-          "dsr": 0.303022850274544,
-          "sr0_annual": 1.5759508181998994,
-          "n_trials": 562.7713493413999
+          "dsr": 0.2987123932853626,
+          "sr0_annual": 1.5798949256917016,
+          "n_trials": 577.5899244238115
         }
       },
       "dsr_primary": {
         "method": "max_matching",
-        "dsr": 0.303022850274544,
-        "sr0_annual": 1.5759508181998994,
-        "n_trials": 562.7713493413999
+        "dsr": 0.2987123932853626,
+        "sr0_annual": 1.5798949256917016,
+        "n_trials": 577.5899244238115
       },
       "dsr_null_dispersion": {
-        "dsr": 0.837044086111043,
-        "sr0_annual": 1.098722427336407
+        "dsr": 0.8349095912761648,
+        "sr0_annual": 1.101472182790082
       },
       "snooping": {
-        "rc_p": 0.261,
-        "spa_lower_p": 0.114,
-        "spa_p": 0.122,
-        "spa_upper_p": 0.123,
-        "spa_hac_p": 0.235,
+        "rc_p": 0.274,
+        "spa_lower_p": 0.119,
+        "spa_p": 0.124,
+        "spa_upper_p": 0.124,
+        "spa_hac_p": 0.243,
+        "hac_scale_ratio": 1.1091197214969073,
         "best_t_index": 1004,
         "n_boot": 1000,
         "mean_block": 10
@@ -706,12 +715,13 @@
         "bonferroni": 2,
         "holm": 2,
         "bh": 315,
-        "by": 0
+        "by": 0,
+        "most_significant_active_bars": 1601
       },
       "neff": {
         "raw": 4984.0,
-        "max_matching": 582.8397908288586,
-        "sim_expected_max": 3.0983191661729843
+        "max_matching": 578.5921485275852,
+        "sim_expected_max": 3.096147578430936
       },
       "dsr": {
         "raw": {
@@ -720,27 +730,28 @@
           "n_trials": 4984.0
         },
         "max_matching": {
-          "dsr": 0.37451724337828124,
-          "sr0_annual": 1.5773513485472823,
-          "n_trials": 582.8397908288586
+          "dsr": 0.37571390859867015,
+          "sr0_annual": 1.5762457952876878,
+          "n_trials": 578.5921485275852
         }
       },
       "dsr_primary": {
         "method": "max_matching",
-        "dsr": 0.37451724337828124,
-        "sr0_annual": 1.5773513485472823,
-        "n_trials": 582.8397908288586
+        "dsr": 0.37571390859867015,
+        "sr0_annual": 1.5762457952876878,
+        "n_trials": 578.5921485275852
       },
       "dsr_null_dispersion": {
-        "dsr": 0.849811454581521,
-        "sr0_annual": 1.1024280748250388
+        "dsr": 0.8503255087879762,
+        "sr0_annual": 1.1016553915844192
       },
       "snooping": {
-        "rc_p": 0.158,
-        "spa_lower_p": 0.088,
+        "rc_p": 0.159,
+        "spa_lower_p": 0.086,
         "spa_p": 0.089,
         "spa_upper_p": 0.089,
-        "spa_hac_p": 0.11,
+        "spa_hac_p": 0.124,
+        "hac_scale_ratio": 1.0855276378957366,
         "best_t_index": 1256,
         "n_boot": 1000,
         "mean_block": 10
@@ -758,22 +769,23 @@
     },
     "lag_bars": 2
   },
+  "subperiod_holm_text": "no sub-period has a single Holm survivor",
   "ranges": {
     "pbo_min": 0.2398018648018648,
     "pbo_max": 0.3,
     "cpcv_median_min": 0.33983897630641363,
     "cpcv_median_max": 0.8792390954728863,
-    "spa_p_min": 0.106,
-    "spa_p_max": 0.15,
+    "spa_p_min": 0.102,
+    "spa_p_max": 0.153,
     "subperiod_holm_max": 0,
-    "subperiod_dsr_max": 0.5705492551815867
+    "subperiod_dsr_max": 0.5753662917818987
   },
   "tables": {
     "cscv_md": "| CSCV blocks S | Splits | PBO | P(OOS Sharpe of winner < 0) |\n|---|---|---|---|\n| 6 | 20 | 0.300 | 0.250 |\n| 8 | 70 | 0.271 | 0.186 |\n| 10 | 252 | 0.242 | 0.123 |\n| 12 | 924 | 0.281 | 0.195 |\n| 14 | 3,432 | 0.240 | 0.145 |\n| 16 | 12,870 | 0.272 | 0.168 |",
     "cpcv_md": "| Groups | Embargo | Splits | Paths | Mean training Sharpe | Median path Sharpe | Worst path | Best path | Paths below zero |\n|---|---|---|---|---|---|---|---|---|\n| 6 | 0% | 15 | 5 | 1.57 | 0.49 | 0.32 | 0.93 | 0% |\n| 6 | 1% | 15 | 5 | 1.56 | 0.60 | 0.24 | 0.83 | 0% |\n| 6 | 2% | 15 | 5 | 1.56 | 0.57 | 0.30 | 0.85 | 0% |\n| 6 | 5% | 15 | 5 | 1.61 | 0.59 | 0.28 | 0.93 | 0% |\n| 8 | 0% | 28 | 7 | 1.57 | 0.36 | 0.29 | 0.79 | 0% |\n| 8 | 1% | 28 | 7 | 1.57 | 0.48 | 0.24 | 0.78 | 0% |\n| 8 | 2% | 28 | 7 | 1.57 | 0.57 | 0.32 | 0.91 | 0% |\n| 8 | 5% | 28 | 7 | 1.62 | 0.63 | 0.40 | 1.09 | 0% |\n| 10 | 0% | 45 | 9 | 1.47 | 0.53 | 0.23 | 0.97 | 0% |\n| 10 | 1% | 45 | 9 | 1.47 | 0.73 | 0.01 | 1.02 | 0% |\n| 10 | 2% | 45 | 9 | 1.47 | 0.64 | 0.10 | 0.94 | 0% |\n| 10 | 5% | 45 | 9 | 1.52 | 0.88 | 0.08 | 1.09 | 0% |\n| 12 | 0% | 66 | 11 | 1.49 | 0.34 | -0.15 | 0.78 | 9% |\n| 12 | 1% | 66 | 11 | 1.48 | 0.34 | -0.17 | 0.99 | 18% |\n| 12 | 2% | 66 | 11 | 1.50 | 0.36 | 0.04 | 0.77 | 0% |\n| 12 | 5% | 66 | 11 | 1.55 | 0.57 | -0.03 | 0.72 | 9% |",
     "kfold_md": "| Purged k-fold splits | Mean training Sharpe of pick | Stitched out-of-sample Sharpe |\n|---|---|---|\n| 5 | 1.49 | 0.41 |\n| 10 | 1.44 | 1.00 |",
-    "subperiods_md": "| Period | Best Sharpe | SR0 | Naive | Holm | SPA p | DSR | PBO | Winner's Sharpe in the other periods |\n|---|---|---|---|---|---|---|---|---|\n| 2018-07-01 to 2021-02-15 | 2.31 | 2.67 | 1,062 | 0 | 0.180 | 0.227 | 0.35 | 0.53 |\n| 2021-02-16 to 2023-10-04 | 1.35 | 1.38 | 58 | 0 | 0.964 | 0.475 | 0.80 | 0.72 |\n| 2023-10-05 to 2026-05-23 | 1.85 | 1.78 | 405 | 0 | 0.483 | 0.571 | 0.58 | 0.77 |",
-    "block_md": "| Mean block (days) | Reality Check p | SPA p |\n|---|---|---|\n| 5 | 0.234 | 0.106 |\n| 10 | 0.258 | 0.132 |\n| 20 | 0.258 | 0.147 |\n| 40 | 0.257 | 0.150 |",
-    "lag_md": "| Execution | Best Sharpe | SR0 | Naive | Holm | SPA p | DSR | PBO |\n|---|---|---|---|---|---|---|---|\n| next bar (baseline) | 1.41 | 1.58 | 1,133 | 0 | 0.122 | 0.303 | 0.27 |\n| 2 bars after the signal | 1.47 | 1.58 | 1,081 | 0 | 0.089 | 0.375 | 0.22 |"
+    "subperiods_md": "| Period | Best Sharpe | SR0 | Naive | Holm | SPA p | DSR | PBO | Winner's Sharpe in the other periods |\n|---|---|---|---|---|---|---|---|---|\n| 2018-07-01 to 2021-02-15 | 2.31 | 2.68 | 1,062 | 0 | 0.187 | 0.217 | 0.35 | 0.53 |\n| 2021-02-16 to 2023-10-04 | 1.35 | 1.38 | 58 | 0 | 0.972 | 0.479 | 0.80 | 0.72 |\n| 2023-10-05 to 2026-05-23 | 1.85 | 1.77 | 405 | 0 | 0.506 | 0.575 | 0.58 | 0.77 |",
+    "block_md": "| Mean block (days) | Reality Check p | SPA p |\n|---|---|---|\n| 5 | 0.249 | 0.102 |\n| 10 | 0.256 | 0.148 |\n| 20 | 0.258 | 0.139 |\n| 40 | 0.229 | 0.153 |",
+    "lag_md": "| Execution | Best Sharpe | SR0 | Naive | Holm | SPA p | DSR | PBO |\n|---|---|---|---|---|---|---|---|\n| next bar (baseline) | 1.41 | 1.58 | 1,133 | 0 | 0.124 | 0.299 | 0.27 |\n| 2 bars after the signal | 1.47 | 1.58 | 1,081 | 0 | 0.089 | 0.376 | 0.22 |"
   }
 }
