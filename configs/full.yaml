@@ -1,0 +1,4 @@
+# The full run. Data source "auto": Binance cache if present (after `make data`),
+# otherwise the CoinMetrics cache (after `make data-fallback`), otherwise synthetic.
+data:
+  source: auto

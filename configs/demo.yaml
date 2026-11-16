@@ -1,0 +1,37 @@
+# Fast end-to-end demo on a small synthetic sample (under 2 minutes on a laptop).
+# Writes to reports/demo/ so it never overwrites the real results or the documents.
+output_dir: reports/demo
+artifacts_dir: artifacts/demo
+render_docs: false
+data:
+  source: synthetic
+synthetic:
+  n_assets: 2
+  n_bars: 1200
+diagnostics:
+  cscv_blocks: 10
+  bootstrap:
+    n_boot: 300
+  trials:
+    n_sim: 1000
+  walkforward:
+    train_bars: 365
+    test_bars: 60
+experiments:
+  e1:
+    mc: {n_worlds: 8, n_assets: 1, n_bars: 800, n_boot: 200, cscv_blocks: 8}
+  e2:
+    strengths: [0.0, 2.0, 4.0]
+    n_worlds: 6
+    n_assets: 1
+    n_bars: 1200
+    n_boot: 200
+    cscv_blocks: 8
+  e4:
+    fees_bps: [0, 10, 30]
+  e5:
+    cscv_blocks: [6, 10]
+    cpcv_groups: [6, 8]
+    embargo_pcts: [0.0, 0.02]
+    mean_blocks: [5, 20]
+    n_subperiods: 2

@@ -79,6 +79,30 @@ def probabilistic_sharpe_ratio(sr, n_obs: int, skew=0.0, kurt=3.0, sr_benchmark=
     return norm.cdf((np.asarray(sr) - sr_benchmark) / sharpe_std_error(sr, n_obs, skew, kurt))
 
 
+def sharpe_pvalue(sr, n_obs: int):
+    """One-sided p-value of H0: true Sharpe <= 0, standard error evaluated UNDER THE NULL.
+
+        p = 1 - Phi( SR * sqrt(T - 1) )
+
+    At SR = 0 the standard error of the Sharpe estimator is 1/sqrt(T-1) whatever the
+    skewness and kurtosis (both corrections in ``sharpe_std_error`` are multiplied by
+    SR). This is the classical t-test of "mean return > 0".
+
+    Why not simply ``1 - PSR(0)``? PSR evaluates the standard error at the ESTIMATED
+    Sharpe ratio using the IN-SAMPLE skewness. For a strategy that is in the market for
+    only a handful of bars, a few lucky returns raise the sample mean and the sample
+    skewness together; the term ``-g3 * SR`` then shrinks the standard error and the
+    strategy looks spuriously significant. Experiment E1 measured this: Bonferroni on
+    ``1 - PSR(0)`` exceeded its 5% family-wise error bound in null worlds, and the
+    offenders were strategies with a handful of active bars; with the null standard
+    error the bound holds (rates in REPORT section 5.1; ``tests/test_sharpe.py``
+    reproduces the effect). PSR is still reported for the selected strategy and still
+    drives the DSR, exactly as in the papers; only the p-values fed to the
+    multiple-testing corrections use this function.
+    """
+    return norm.sf(np.asarray(sr, dtype=float) * np.sqrt(n_obs - 1.0))
+
+
 def expected_max_z(n_trials: float) -> float:
     """Expected maximum of ``n_trials`` independent standard normal draws (approximation).
 

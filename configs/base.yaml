@@ -86,12 +86,12 @@ diagnostics:
   trials:
     primary: max_matching      # which effective-trials estimate feeds the headline DSR
     methods: [cluster, avg_corr, eigen, max_matching]
-    n_sim: 2000
+    n_sim: 4000
 
 experiments:
   e1:
     mc:
-      n_worlds: 100            # per null type
+      n_worlds: 200            # per null type
       kinds: [gbm, garch]
       n_assets: 2
       n_bars: 2000

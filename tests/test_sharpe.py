@@ -103,3 +103,26 @@ def test_psr_is_calibrated_by_monte_carlo():
     psr = sh.probabilistic_sharpe_ratio(m["sharpe"], t, m["skew"], m["kurt"], true_sr)
     rate = np.mean(psr > 0.95)
     assert 0.035 < rate < 0.07
+
+
+def test_null_pvalue_is_the_t_test_and_psr_overstates_sparse_strategies():
+    """Regression test for the E1 finding (see ``sharpe_pvalue``)."""
+    assert sh.sharpe_pvalue(0.0, 500) == pytest.approx(0.5)
+    assert sh.sharpe_pvalue(0.1, 401) == pytest.approx(1 - _phi(0.1 * 20.0), rel=1e-9)
+    # 4000 skill-less strategies that each hold a position on only 6 of 2000 bars.
+    rng = np.random.default_rng(5)
+    t, n, active = 2000, 4000, 6
+    x = np.zeros((t, n))
+    for j in range(n):
+        x[rng.choice(t, active, replace=False), j] = rng.standard_normal(active)
+    m = sh.return_moments(x)
+    p_null = sh.sharpe_pvalue(m["sharpe"], t)
+    p_psr = 1 - sh.probabilistic_sharpe_ratio(m["sharpe"], t, m["skew"], m["kurt"])
+    bonferroni = 0.05 / n
+    assert (p_null < bonferroni).sum() == 0  # the t-statistic of 6 points is at most sqrt(6)
+    assert (p_psr < bonferroni).sum() >= 5  # in-sample skewness fakes significance
+    # For strategies that trade all the time the two p-values agree closely.
+    dense = sh.return_moments(rng.standard_normal((t, 200)))
+    p1 = sh.sharpe_pvalue(dense["sharpe"], t)
+    p2 = 1 - sh.probabilistic_sharpe_ratio(dense["sharpe"], t, dense["skew"], dense["kurt"])
+    np.testing.assert_allclose(p1, p2, atol=5e-3)

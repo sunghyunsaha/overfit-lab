@@ -1,0 +1,353 @@
+# How many backtests survive honest testing?
+
+*A study of selection bias in systematic trading-strategy research.*
+
+**Data used for the empirical results (E3 to E5): {{e3.data.label}}.** Experiments E1 and E2 are synthetic by design. Every number and table in this report is written by the pipeline from `reports/results/*.json`. The prose that interprets them was written for the committed run; if you re-run on other data, re-read it against the regenerated tables.
+
+## Abstract
+
+We generate {{e3.n_variants:,}} variants of five classic technical trading rules on {{e3.n_assets}} crypto assets, backtest them net of costs on {{e3.net.years:.1f}} years of daily data, and ask how many remain statistically convincing once the search itself is accounted for. Tested one at a time at the 5% level, {{e3.net.survivors.naive:,}} variants ({{e3.net.survivors.naive_frac:.1%}}) look significant. After Holm's correction {{e3.net.survivors.holm:,}} remain; after Benjamini-Hochberg {{e3.net.survivors.bh:,}}. The best variant's annualised Sharpe ratio of {{e3.net.sharpe.best_annual:.2f}} is {{e3.verdict.dsr_text}} what the best of that many skill-less strategies is expected to show ({{e3.net.dsr_primary.sr0_annual:.2f}}), giving a Deflated Sharpe Ratio of {{e3.net.dsr_primary.dsr:.2f}}. Hansen's SPA test {{e3.verdict.spa_text}} the hypothesis that no variant has positive expected return (p = {{e3.net.snooping.spa_p:.2f}}), and the Probability of Backtest Overfitting is {{e3.net.pbo.pbo:.2f}}. Measured against buy-and-hold of the same coin instead of cash, {{e3.vs_buy_hold.survivors.naive:,}} variants are significant even before correction. The same tools are first validated on synthetic markets with no signal, where they should stay silent, and on markets with a planted signal, where they should not. That validation exposed two finite-sample problems in textbook recipes (section 5.1), which were fixed before any real data was analysed.
+
+## 1. Introduction
+
+A backtest answers the question "how would this rule have done?" A research process asks that question thousands of times and reports the best answer. The best of many noisy estimates is biased upwards even when every underlying strategy is worthless, so the reported Sharpe ratio of a selected strategy overstates what an investor should expect. Bailey, Borwein, Lopez de Prado and Zhu (2014) call the result "pseudo-mathematics": with enough trials, any Sharpe ratio can be manufactured from noise.
+
+This project measures the size of that effect in a controlled setting. It has three parts:
+
+1. a transparent strategy factory and backtester that produce one T x N matrix of daily returns (section 3);
+2. implementations, from the original papers, of the main diagnostics for selection bias (section 4);
+3. five experiments (section 5): a null world (E1), a power study (E2), real data (E3), cost sensitivity (E4) and robustness (E5).
+
+The contribution is not a trading strategy. It is a worked demonstration, with tests, of how much of a "best backtest" survives when the search is counted honestly, and of how the diagnostic tools themselves behave when the truth is known.
+
+## 2. Data
+
+### 2.1 Real data
+
+Source for this run: **{{e3.data.label}}**. Assets: {{e3.n_assets}} large, long-lived coins. Sample: {{e3.data.start}} to {{e3.data.end}}, {{e3.data.n_bars:,}} daily bars per asset, aligned on a common calendar.
+
+The intended primary source is Binance spot OHLCV bulk data (`data.binance.vision`), for which a downloader with checksum verification is included (`make data`). The build machine could not reach that host, so the committed results use real daily reference prices from the CoinMetrics community dataset. That source has one price per day and no intraday high or low, so Donchian channels are channels of daily closes in this run. Binance data replaces it with `make data && make all`.
+
+Buy-and-hold over the sample, for context:
+
+{{e3.tables.assets_md}}
+
+The loader validates every asset and logs each finding (`reports/results/data_validation.json`). Duplicated timestamps are dropped, missing bars are filled flat at the previous close with zero volume, inconsistent highs and lows are widened, and outliers (daily log returns above 12 robust standard deviations) are logged but left unchanged, because large moves in crypto are usually real. Counts for this run:
+
+{{e3.tables.validation_md}}
+
+### 2.2 Synthetic data
+
+Synthetic markets give a known ground truth. For asset i and bar t the simple return is
+
+```math
+R_{i,t} = \mu_{i,t} + \sigma_{i,t} z_{i,t}, \qquad z_{i,t} = \sqrt{\rho}\, f_t + \sqrt{1-\rho}\, e_{i,t}
+```
+
+with a common factor f (assets are correlated, as coins are). Three generators are used:
+
+- **GBM:** constant volatility, Gaussian shocks.
+- **GARCH:** $`\sigma^2_{i,t} = \omega + \alpha\,\varepsilon^2_{i,t-1} + \beta\,\sigma^2_{i,t-1}`$ with standardised Student-t shocks (6 degrees of freedom), giving volatility clustering and fat tails.
+- **Planted signal:** $`\mu_{i,t} = s\,\sigma_{i,t}\,x_{i,t}`$ where x is a hidden AR(1) state with unit variance and a half-life of {{e2.half_life}} bars. The strength is reported as the annualised Sharpe ratio $`s\sqrt{365}`$ an oracle that sees x would earn.
+
+With no signal and no drift the conditional mean of the simple return is exactly zero, so prices are a martingale and every strategy that only uses past data has a true gross Sharpe ratio of exactly zero. That property is what makes E1 a clean test.
+
+## 3. Strategy universe and backtester
+
+### 3.1 Universe
+
+Five rule families, each with a parameter grid, give 250 base variants per asset. Each is run with and without a volatility-target overlay (position scaled by target volatility over trailing realised volatility, capped at 2), giving 500 variants per asset and {{e3.n_variants:,}} in total.
+
+| Family | Rule | Base variants per asset |
+|---|---|---|
+| Moving-average crossover | long when the fast average is above the slow one; SMA or EMA | 68 |
+| Time-series momentum | sign of the trailing return over a lookback | 26 |
+| Z-score mean reversion | fade deviations of the log price from its rolling mean, with entry and exit thresholds | 80 |
+| Donchian breakout | enter on a new N-bar high or low, exit on a shorter channel | 28 |
+| RSI thresholds | Wilder's RSI, reversal or trend style | 48 |
+
+Each rule exists in a long-only and a long-short version.
+
+### 3.2 Backtester
+
+The backtester is about forty lines of NumPy (`backtest/engine.py`). A strategy decides a target position $`w_t`$ at the close of bar t using data up to and including bar t. The position is held during the next bar:
+
+```math
+\text{held}_t = w_{t-1}, \qquad g_t = \text{held}_t\, r_t, \qquad r_t = \frac{C_t}{C_{t-1}} - 1 .
+```
+
+Trading from the previous holding to the new one is charged to the bar in which the new position starts:
+
+```math
+\text{net}_t = g_t - |\text{held}_t - \text{held}_{t-1}|\,\bigl(\text{fee} + k\,\hat\sigma^{\text{daily}}_{t-1}\bigr).
+```
+
+The fee is {{e3.costs.fee_bps:g}} basis points per side and slippage is {{e3.costs.slippage_vol_mult}} times the trailing {{e3.costs.slippage_window}}-day volatility, measured up to the bar before the trade. Gross returns, turnover and slippage are stored as three T x N matrices, so net returns for any fee are a linear combination and all diagnostics read the same data. A test replaces all data after an arbitrary bar and checks that every signal, position and return up to that bar is unchanged (`tests/test_lookahead.py`).
+
+## 4. Methods
+
+Throughout, SR denotes a per-period (daily) Sharpe ratio, mean over standard deviation with a zero risk-free rate; annualised values multiply by $`\sqrt{365}`$. T is the number of daily observations and N the number of variants.
+
+### 4.1 Probabilistic Sharpe Ratio
+
+The Sharpe estimator has standard error (Mertens 2002; Bailey and Lopez de Prado 2012)
+
+```math
+\hat\sigma(\widehat{SR}) = \sqrt{\frac{1 - \hat\gamma_3 \widehat{SR} + \frac{\hat\gamma_4 - 1}{4}\widehat{SR}^2}{T-1}}
+```
+
+where $`\hat\gamma_3`$ is the skewness and $`\hat\gamma_4`$ the kurtosis of the returns. The Probabilistic Sharpe Ratio is the confidence that the true Sharpe ratio exceeds a benchmark $`SR^*`$:
+
+```math
+PSR(SR^*) = \Phi\!\left(\frac{\widehat{SR} - SR^*}{\hat\sigma(\widehat{SR})}\right).
+```
+
+For the per-variant p-values that feed the multiple-testing corrections we use the standard error under the null hypothesis, $`p = 1 - \Phi(\widehat{SR}\sqrt{T-1})`$, which is the classical t-test. The reason is an empirical finding reported in section 5.1.
+
+### 4.2 Expected maximum Sharpe ratio and the Deflated Sharpe Ratio
+
+If N independent strategies all have zero true Sharpe ratio and their estimates have standard deviation $`\sqrt{V}`$, the expected value of the largest estimate is approximately (Bailey and Lopez de Prado 2014)
+
+```math
+SR_0 = \sqrt{V}\left[(1-\gamma)\,\Phi^{-1}\!\left(1-\frac{1}{N}\right) + \gamma\,\Phi^{-1}\!\left(1-\frac{1}{N e}\right)\right]
+```
+
+with $`\gamma \approx 0.5772`$ the Euler-Mascheroni constant. The Deflated Sharpe Ratio is the PSR measured against that benchmark, $`DSR = PSR(SR_0)`$, using the selected strategy's own skewness and kurtosis. V is the cross-sectional variance of the N Sharpe estimates, as in the paper. A DSR above 0.95 says the selected strategy is significantly better than the best of N lucky draws.
+
+### 4.3 Effective number of independent trials
+
+The variants are highly correlated, so N in the formula above should not be the raw count. Four estimators are computed from the correlation matrix C of the variants' returns (`diagnostics/trials.py`):
+
+- **Average correlation** (Bailey and Lopez de Prado 2014): $`N_{\text{eff}} = \bar\rho + (1-\bar\rho)N`$.
+- **Clustering**: hierarchical clustering on the distance $`\sqrt{(1-C_{ij})/2}`$, with the number of clusters chosen by the silhouette quality score. This is a simplified form of the ONC algorithm of Lopez de Prado and Lewis (2019): average linkage replaces repeated k-means and there is no recursive refinement.
+- **Eigenvalues**: the participation ratio $`N^2 / \lVert C \rVert_F^2`$.
+- **Max-matching** (this project): simulate $`z \sim \mathcal{N}(0, C)`$, average $`\max_k z_k`$, and solve for the number of independent normals with the same expected maximum. This applies the definition directly: the N that reproduces the expected maximum of the correlated family.
+
+Section 5.1 compares their predictions with the realised maximum in null worlds. Max-matching is used for the headline DSR; the others are reported.
+
+### 4.4 Probability of Backtest Overfitting
+
+Combinatorially Symmetric Cross-Validation (Bailey, Borwein, Lopez de Prado and Zhu 2017) cuts the T rows into S contiguous blocks and considers every way of assigning half of them to an in-sample set and the rest to an out-of-sample set. For each of the $`\binom{S}{S/2}`$ splits, the variant with the best in-sample Sharpe ratio is found and its out-of-sample rank among all N variants is expressed as a relative rank $`\bar\omega \in (0,1)`$ and a logit
+
+```math
+\lambda = \ln\frac{\bar\omega}{1-\bar\omega}, \qquad PBO = \Pr[\lambda \le 0].
+```
+
+PBO is the fraction of splits in which the in-sample winner falls in the bottom half out of sample. Selection on pure noise gives about 0.5. We use S = {{e3.net.pbo.n_blocks}} ({{e3.net.pbo.n_splits:,}} splits).
+
+### 4.5 Purged k-fold and Combinatorial Purged Cross-Validation
+
+Here the "model" is the rule "trade the variant with the best training-set Sharpe ratio". Following Lopez de Prado (2018, chapters 7 and 12), training observations whose information window overlaps the test set are purged, and an embargo removes further observations after each test block. With N groups and k test groups there are $`\binom{N}{k}`$ splits and they recombine into $`\binom{N-1}{k-1}`$ backtest paths, each covering the whole sample out of sample. We use {{e3.net.cpcv.n_groups}} groups with {{e3.net.cpcv.n_test_groups}} test groups ({{e3.net.cpcv.n_splits}} splits, {{e3.net.cpcv.n_paths}} paths), a purge horizon of {{e3.net.cpcv.label_horizon}} bars and an embargo of {{e3.net.cpcv.embargo_bars}} bars. A test checks by brute force that no training observation overlaps a test window (`tests/test_cv.py`).
+
+### 4.6 Reality Check and SPA
+
+White's (2000) Reality Check tests $`H_0: \max_k E[d_k] \le 0`$, where $`d_k`$ is the return of variant k in excess of the benchmark (cash). The statistic is $`V = \max_k \sqrt{T}\,\bar d_k`$ and its null distribution is approximated with the stationary bootstrap of Politis and Romano (1994), which resamples blocks of rows with geometric lengths (mean {{e3.net.snooping.mean_block}} days, {{e3.net.snooping.n_boot:,}} resamples), keeping both cross-sectional and short-range time dependence:
+
+```math
+V^*_b = \max_k \sqrt{T}\,(\bar d^*_{k,b} - \bar d_k), \qquad p = \frac{1}{B}\sum_b 1\{V^*_b > V\}.
+```
+
+Hansen's (2005) SPA test studentises the statistic and re-centres the bootstrap so that clearly poor strategies do not inflate the null distribution:
+
+```math
+T^{SPA} = \max\Bigl(\max_k \frac{\sqrt{T}\,\bar d_k}{s_k},\,0\Bigr), \qquad g_c(\bar d_k) = \bar d_k\,1\Bigl\{\bar d_k \ge -s_k\sqrt{\tfrac{2\ln\ln T}{T}}\Bigr\}.
+```
+
+We report the consistent p-value. One deviation from the paper: Hansen sets $`s_k`$ to an estimate of the long-run standard deviation; we use the sample standard deviation and report the long-run version alongside, for the reason measured in section 5.1.
+
+### 4.7 Multiple-testing corrections and the haircut Sharpe ratio
+
+Per-variant p-values are adjusted with Bonferroni and Holm (1979), which control the family-wise error rate, and with Benjamini-Hochberg (1995) and Benjamini-Yekutieli (2001), which control the false discovery rate. Implementations are checked against `statsmodels`. The haircut Sharpe ratio of Harvey and Liu (2015) converts the best variant's Sharpe ratio to a p-value, adjusts it, and converts back. Simplification: Harvey and Liu simulate the unobserved tests from a fitted model; here all tests are observed, so the actual p-values are used.
+
+### 4.8 Minimum Backtest Length
+
+Bailey, Borwein, Lopez de Prado and Zhu (2014) show that with N independent skill-less trials an annualised Sharpe ratio of $`\overline{SR}`$ is expected in sample unless the backtest is longer than
+
+```math
+MinBTL \approx \left(\frac{(1-\gamma)\,\Phi^{-1}(1-\frac{1}{N}) + \gamma\,\Phi^{-1}(1-\frac{1}{Ne})}{\overline{SR}}\right)^2 < \frac{2\ln N}{\overline{SR}^2}\ \text{years}.
+```
+
+### 4.9 Naive selection and walk-forward
+
+As a baseline, the variant with the best Sharpe ratio over a trailing {{e3.net.walkforward.train_bars}}-day window is traded for the next {{e3.net.walkforward.test_bars}} days, rolling forward. We also compare every variant's Sharpe ratio in the first and second halves of the sample.
+
+## 5. Experiments and results
+
+### 5.1 E1: null world
+
+**Setup.** One full-size world ({{e1.full.n_assets}} assets, {{e1.full.n_bars:,}} daily bars, GARCH with fat tails, no signal) and a Monte Carlo of {{e1.mc.gbm.n_worlds}} smaller worlds per null type ({{e1.mc.gbm.n_variants:,}} variants, {{e1.mc.gbm.n_bars:,}} bars each). Gross returns are used in the Monte Carlo because with costs every true Sharpe ratio is negative and the null holds with room to spare.
+
+**Full-size world.** The best of {{e1.full.gross.n_variants:,}} skill-less variants has an annualised gross Sharpe ratio of {{e1.full.gross.sharpe.best_annual:.2f}} and an uncorrected PSR(0) of {{e1.full.gross.best.psr0:.4f}}.
+
+{{e1.tables.full_survival_md}}
+
+{{e1.tables.full_family_md}}
+
+![E1 null world](reports/figures/e1_null_world.png)
+
+The walk-forward baseline shows the mechanism directly: the variants picked in the selection windows had a mean annualised Sharpe ratio of {{e1.full.gross.walkforward.mean_is_annual:.2f}} there and {{e1.full.gross.walkforward.oos_annual:.2f}} in the following windows, and the regression slope of second-half on first-half Sharpe ratios across variants is {{e1.full.gross.decay.slope:.2f}}.
+
+**Monte Carlo: false-positive rates.** Share of null worlds in which each method makes at least one false discovery (95% Wilson interval). The nominal level is 5%.
+
+{{e1.tables.mc_md}}
+
+![E1 false-positive rates](reports/figures/e1_false_positive_rates.png)
+
+Reading the table:
+
+- Tested one at a time, {{e1.summary.naive_frac_min:.1%}} to {{e1.summary.naive_frac_max:.1%}} of variants are significant at 5%, as they should be, which means that almost every world contains "discoveries".
+- Holm's family-wise error rate is at most {{e1.summary.max_fwer_holm:.1%}} and Benjamini-Hochberg makes any discovery in at most {{e1.summary.max_fdr_bh:.1%}} of worlds. The Reality Check rejects in at most {{e1.summary.max_rc:.1%}}, SPA in at most {{e1.summary.max_spa:.1%}}, and the DSR passes in at most {{e1.summary.max_dsr:.1%}} ({{e1.summary.max_dsr_null:.1%}} with the theoretical dispersion discussed in section 5.2).
+- Mean PBO across null worlds is between {{e1.summary.mean_pbo_min:.2f}} and {{e1.summary.mean_pbo_max:.2f}}, close to the 0.5 that pure noise should give.
+
+**Finding 1: PSR with in-sample skewness is not safe for multiple testing.** Bonferroni applied to $`1 - PSR(0)`$ made false discoveries in up to {{e1.summary.max_bonferroni_psr:.1%}} of null worlds, although Bonferroni cannot exceed 5% when the p-values are valid. In the {{e1.summary.psr_offender_n}} worlds where this happened, the variant responsible had a non-zero return on a median of {{e1.summary.psr_offender_median:.0f}} of the {{e1.mc.gbm.n_bars:,}} bars (range {{e1.summary.psr_offender_min}} to {{e1.summary.psr_offender_max}}). For a variant that is almost never in the market a few lucky returns raise the sample mean and the sample skewness together, the term $`-\hat\gamma_3\widehat{SR}`$ shrinks the standard error, and the p-value becomes far too small. Evaluating the standard error under the null removes the problem, so that is what the corrections use (`sharpe_pvalue`). PSR itself is still reported for the selected variant and still drives the DSR.
+
+**Finding 2: the SPA statistic is sensitive to how it is studentised.** With the long-run standard deviation, as in Hansen (2005), SPA rejected in up to {{e1.summary.max_spa_hac:.1%}} of null worlds; with the sample standard deviation the figure is {{e1.summary.max_spa:.1%}}. The long-run estimate adds many noisy sample autocovariances to the variance, and a maximum over thousands of ratios picks out the variants whose estimate happens to be too small. In the {{e1.summary.spa_hac_reject_n}} worlds where the long-run version rejected, the winning variant's long-run estimate was a median of {{e1.summary.spa_hac_ratio_median:.0%}} of its sample standard deviation. The bootstrap holds the scale fixed and cannot see this. The Monte Carlo rates carry sampling error of a few percentage points (see the intervals), so the size of the excess is uncertain, but the mechanism is reproducible (`tests/test_bootstrap.py`).
+
+**Finding 3: counting clusters is not the same as counting independent trials.** The table compares each estimator's predicted best Sharpe ratio $`SR_0`$ with the realised average best Sharpe ratio across null worlds ({{e1.summary.realised_best_gbm:.2f}} for GBM, {{e1.summary.realised_best_garch:.2f}} for GARCH).
+
+{{e1.tables.calibration_md}}
+
+The raw count and the average-correlation formula overstate the luck benchmark, which makes the DSR conservative. Clustering and the eigenvalue ratio understate it badly, and a DSR built on the cluster count passed in up to {{e1.summary.max_dsr_cluster:.1%}} of null worlds. A cluster of similar strategies is not one trial: its members are correlated but not identical, so the best of them is still inflated. Max-matching comes closest and errs slightly low, which the DSR's own margin absorbs.
+
+### 5.2 E2: power
+
+**Setup.** GARCH markets with a planted signal of increasing strength, {{e2.n_worlds}} worlds per level, {{e2.n_variants:,}} variants and {{e2.n_bars:,}} daily bars each, net of costs. "Detection" means the method declares at least one variant, or the family, significant.
+
+{{e2.tables.levels_md}}
+
+{{e2.tables.thresholds_md}}
+
+![E2 power](reports/figures/e2_power.png)
+
+{{e2.summary.sentence}} The second column of the first table is the average net Sharpe ratio, across worlds and assets, of the best fixed variant: it shows how much of the oracle's edge simple price rules capture. It is a maximum of noisy averages, so it is biased upwards; its value at zero signal ({{e2.summary.true_best_at_zero:.2f}}, where the truth is at most zero) shows by how much. Mean PBO falls from {{e2.summary.pbo_at_zero:.2f}} with no signal to {{e2.summary.pbo_at_max:.2f}} at the strongest.
+
+**The DSR's dispersion term.** At the strongest signal (oracle Sharpe {{e2.summary.max_strength:g}}, best variant's true Sharpe about {{e2.summary.true_best_at_max:.2f}}) SPA detects in {{e2.summary.spa_at_max:.0%}} of worlds and the DSR as defined in the paper in {{e2.summary.dsr_paper_at_max:.0%}}. The paper sets the luck benchmark from the cross-sectional variance of the trial Sharpe ratios. Under the null that variance is sampling noise, but a real signal makes trend rules good and reversal rules bad, which widens the cross-section and raises the benchmark along with the best Sharpe. Replacing the cross-sectional variance by the theoretical sampling variance $`1/(T-1)`$ removes the feedback: that variant detects in {{e2.summary.dsr_null_at_max:.0%}} of worlds at the strongest signal and passed in at most {{e1.summary.max_dsr_null:.1%}} of null worlds. The headline DSR keeps the paper's definition and the variant is reported beside it.
+
+The practical message is the mirror image of E1: the thresholds that keep the tools quiet under the null also hide small real edges, so with this much data a strategy needs a large true Sharpe ratio before these procedures can tell it from luck. Methods that control the false-positive rate most tightly pay for it in power.
+
+### 5.3 E3: real data
+
+**Setup.** {{e3.n_variants:,}} variants, {{e3.data.n_bars:,}} daily bars ({{e3.net.years:.1f}} years), net of {{e3.costs.fee_bps:g}} bps per side plus slippage. {{e3.net.n_never_traded}} variants never traded and are counted as trials with p = 1.
+
+**By family (net).**
+
+{{e3.tables.families_md}}
+
+**Top ten variants by net Sharpe ratio.**
+
+{{e3.tables.top10_md}}
+
+**Per-variant tests.**
+
+{{e3.tables.survival_md}}
+
+**Family-level tests and selection diagnostics.** The last column repeats the analysis on active returns, each variant minus buy-and-hold of its own asset.
+
+{{e3.tables.family_level_md}}
+
+![E3 key figure](reports/figures/e3_key_figure.png)
+
+![E3 Sharpe distribution](reports/figures/e3_sharpe_distribution.png)
+
+**Effective number of trials and the DSR.**
+
+{{e3.tables.neff_md}}
+
+With the theoretical null dispersion $`1/\sqrt{T-1}`$ in place of the cross-sectional dispersion, $`SR_0`$ is {{e3.net.dsr_null_dispersion.sr0_annual:.2f}} and the DSR is {{e3.net.dsr_null_dispersion.dsr:.2f}}.
+
+**Selection out of sample.**
+
+- Split in half: the regression slope of second-half on first-half Sharpe ratios is {{e3.net.decay.slope:.2f}} (rank correlation {{e3.net.decay.rank_corr:.2f}}). The first-half winner goes from {{e3.net.decay.best_is_annual:.2f}} to {{e3.net.decay.best_oos_annual:.2f}}; the first-half top 50 go from {{e3.net.decay.top50_is_annual:.2f}} to {{e3.net.decay.top50_oos_annual:.2f}} on average.
+- Walk-forward: over {{e3.net.walkforward.n_windows}} windows the selected variants averaged {{e3.net.walkforward.mean_is_annual:.2f}} in the selection window; the stitched out-of-sample Sharpe ratio is {{e3.net.walkforward.oos_annual:.2f}}, and {{e3.net.walkforward.frac_windows_oos_negative:.0%}} of windows lost money.
+- CPCV: the selected variants averaged {{e3.net.cpcv.mean_is_annual:.2f}} on the training sets; the {{e3.net.cpcv.n_paths}} out-of-sample paths have a median Sharpe ratio of {{e3.net.cpcv.median_path_annual:.2f}} (range {{e3.net.cpcv.min_path_annual:.2f}} to {{e3.net.cpcv.max_path_annual:.2f}}).
+- Minimum backtest length: with {{e3.net.dsr_primary.n_trials:,.0f}} effective trials a Sharpe ratio of {{e3.net.sharpe.best_annual:.2f}} is expected by luck in any backtest shorter than {{e3.net.min_btl.years_needed_primary:.1f}} years ({{e3.net.min_btl.years_needed_raw:.1f}} years with the raw count); the sample is {{e3.net.years:.1f}} years.
+- Haircut Sharpe ratio of the best variant: {{e3.net.haircut.bonferroni.sharpe_annual:.2f}} after Bonferroni with the raw count (a {{e3.net.haircut.bonferroni.haircut:.0%}} haircut), {{e3.net.haircut.bonferroni_neff.sharpe_annual:.2f}} with the effective count, {{e3.net.haircut.bhy.sharpe_annual:.2f}} after Benjamini-Hochberg-Yekutieli.
+
+![E3 in-sample versus out-of-sample](reports/figures/e3_is_vs_oos.png)
+
+![E3 CPCV paths and minimum backtest length](reports/figures/e3_cpcv_minbtl.png)
+
+**Reading the results.** {{e3.verdict.overall}} The best variant is `{{e3.best.label}}`. Three things stand out.
+
+First, the gap between naive and corrected counts is the headline: {{e3.net.survivors.naive:,}} variants pass a 5% test, {{e3.verdict.bh_text}}, and {{e3.verdict.holm_text}}.
+
+Second, the naive count is far above the 5% that pure noise would give, and PBO ({{e3.net.pbo.pbo:.2f}}) is below the 0.5 of the null worlds, so the matrix is not pure noise: {{e3.verdict.pbo_text}}. The family table shows where the structure is. Trend-type rules have positive median Sharpe ratios and mean-reversion rules do not, and the assets rose strongly over the sample (see section 2.1). A long-only trend rule on a rising asset collects much of that drift. This is a real positive expected return over cash, which is what Benjamini-Hochberg picks up, but it is market exposure rather than timing skill. The active-return column makes the point: against buy-and-hold the best Sharpe ratio is {{e3.vs_buy_hold.sharpe.best_annual:.2f}}, only {{e3.vs_buy_hold.sharpe.frac_positive:.0%}} of variants beat their own asset, {{e3.vs_buy_hold.survivors.naive:,}} are significant before any correction, and the SPA p-value is {{e3.vs_buy_hold.snooping.spa_p:.2f}}.
+
+Third, the best Sharpe ratio is {{e3.verdict.dsr_text}} the luck benchmark, so the single best backtest carries no evidence beyond the family it came from. Whatever is real in this universe is a broad, modest exposure shared by hundreds of variants, not the standout performance of the winner.
+
+### 5.4 E4: cost sensitivity
+
+Net returns are recomputed for fees from {{e4.summary.min_fee:g}} to {{e4.summary.max_fee:g}} bps per side with slippage unchanged.
+
+{{e4.tables.costs_md}}
+
+![E4 cost sensitivity](reports/figures/e4_costs.png)
+
+The naive count falls from {{e4.summary.naive_at_min_fee:,}} to {{e4.summary.naive_at_max_fee:,}} and the Benjamini-Hochberg count from {{e4.summary.bh_at_min_fee:,}} to {{e4.summary.bh_at_max_fee:,}} as fees rise; the median variant's Sharpe ratio goes from {{e4.summary.median_at_min_fee:.2f}} to {{e4.summary.median_at_max_fee:.2f}}. Holm survivors range from {{e4.summary.holm_min}} to {{e4.summary.holm_max}}, the largest DSR at any fee is {{e4.summary.dsr_max:.2f}} and the smallest SPA p-value is {{e4.summary.spa_p_min:.2f}}. The best variants trade rarely, so their Sharpe ratios move little with the fee; costs mainly remove the high-turnover part of the distribution.
+
+### 5.5 E5: robustness
+
+**Number of CSCV blocks.**
+
+{{e5.tables.cscv_md}}
+
+**CPCV groups and embargo; purged k-fold.**
+
+{{e5.tables.cpcv_md}}
+
+{{e5.tables.kfold_md}}
+
+**Sample period.** The sample is cut into {{e5.subperiods.0.n_obs:,}}-day sub-periods and the light diagnostics are re-run on each. The last column is the Sharpe ratio that the sub-period's winner earned in the rest of the sample.
+
+{{e5.tables.subperiods_md}}
+
+**Bootstrap block length.**
+
+{{e5.tables.block_md}}
+
+**Execution delay.** One extra bar between signal and trade.
+
+{{e5.tables.lag_md}}
+
+![E5 robustness](reports/figures/e5_robustness.png)
+
+Across these settings PBO ranges from {{e5.ranges.pbo_min:.2f}} to {{e5.ranges.pbo_max:.2f}} with the number of blocks, the median CPCV path Sharpe ratio from {{e5.ranges.cpcv_median_min:.2f}} to {{e5.ranges.cpcv_median_max:.2f}}, and the SPA p-value from {{e5.ranges.spa_p_min:.2f}} to {{e5.ranges.spa_p_max:.2f}} with the block length. No sub-period has more than {{e5.ranges.subperiod_holm_max}} Holm survivors and the largest sub-period DSR is {{e5.ranges.subperiod_dsr_max:.2f}}. The sub-period table is the most informative. Each period has a different winner, the last column shows how little of its in-period Sharpe ratio it earned in the rest of the sample, and PBO itself varies widely between periods: it describes the sample as much as the method. The CPCV summaries are the least stable quantity here, which is a reminder that a handful of paths is a small sample.
+
+## 6. Discussion
+
+**How much is selection luck?** In the null worlds, all of it, and the best of {{e1.full.gross.n_variants:,}} skill-less variants still shows an annualised Sharpe ratio of {{e1.full.gross.sharpe.best_annual:.2f}} over {{e1.full.gross.years:.1f}} years. On the real data the best variant does not exceed that kind of benchmark, the walk-forward rule that trades each window's winner earns much less than its in-sample figure, and nothing beats buy-and-hold. The honest summary of the search is "some long exposure to a rising asset class", not "a strategy with a Sharpe ratio of {{e3.net.sharpe.best_annual:.2f}}".
+
+**The tools need testing too.** Two textbook recipes failed their null-world check before being fixed: PSR-based p-values under Bonferroni, and long-run studentisation in SPA. A third, cluster counts as the number of trials in the DSR, failed outright, and the power study showed that the DSR's dispersion term can absorb a real signal. None of these is visible on real data, where the truth is unknown. Running every diagnostic on data with a known answer first is the main methodological lesson of the project.
+
+**Control of false positives costs power.** E2 shows that the procedures that stay quiet in the null world also stay quiet for small real edges. With this much data and this many trials only a large true Sharpe ratio is detectable (section 5.2). That is a statement about the evidence, not about markets: a real but small edge cannot be established from a backtest search of this size.
+
+**FWER or FDR?** Holm asks whether any single variant can be trusted and Benjamini-Hochberg asks what fraction of a list can be trusted. They answer different questions, and here they disagree in an informative way: there is a broad, shared effect (which FDR control detects) and no individually outstanding variant (which FWER control requires).
+
+## 7. Limitations
+
+The main ones are listed here; [LIMITATIONS.md](LIMITATIONS.md) gives the full list.
+
+- The asset list is survivorship-biased: coins that were large and still trading at the end of the sample.
+- The data in this run is close-only daily prices from one aggregated source, not exchange OHLCV, and hourly bars were not analysed.
+- Costs are a simple model: a flat fee plus volatility-proportional slippage, no funding costs for shorts, no market impact, no borrowing constraints.
+- The benchmark for most tests is cash. Long-only variants earn the market's drift; section 5.3 addresses this with an active-return analysis but does not model risk-adjusted benchmarks.
+- The universe is five technical families. The conclusions are about this search, not about systematic trading in general.
+- The Monte Carlo sizes (hundreds of worlds) leave sampling error of a few percentage points in the reported rates.
+- Several methods are simplified and flagged where they appear: the clustering estimator, the haircut calculation, the truncated long-run variance, and the label horizon used for purging.
+
+## References
+
+- Bailey, D. H. and Lopez de Prado, M. (2012). The Sharpe Ratio Efficient Frontier. *Journal of Risk* 15(2), 3-44.
+- Bailey, D. H. and Lopez de Prado, M. (2014). The Deflated Sharpe Ratio: Correcting for Selection Bias, Backtest Overfitting and Non-Normality. *Journal of Portfolio Management* 40(5), 94-107.
+- Bailey, D. H., Borwein, J. M., Lopez de Prado, M. and Zhu, Q. J. (2014). Pseudo-Mathematics and Financial Charlatanism: The Effects of Backtest Overfitting on Out-of-Sample Performance. *Notices of the American Mathematical Society* 61(5), 458-471.
+- Bailey, D. H., Borwein, J. M., Lopez de Prado, M. and Zhu, Q. J. (2017). The Probability of Backtest Overfitting. *Journal of Computational Finance* 20(4), 39-69.
+- Benjamini, Y. and Hochberg, Y. (1995). Controlling the False Discovery Rate: A Practical and Powerful Approach to Multiple Testing. *Journal of the Royal Statistical Society B* 57(1), 289-300.
+- Benjamini, Y. and Yekutieli, D. (2001). The Control of the False Discovery Rate in Multiple Testing under Dependency. *Annals of Statistics* 29(4), 1165-1188.
+- Hansen, P. R. (2005). A Test for Superior Predictive Ability. *Journal of Business and Economic Statistics* 23(4), 365-380.
+- Harvey, C. R. and Liu, Y. (2015). Backtesting. *Journal of Portfolio Management* 42(1), 13-28.
+- Holm, S. (1979). A Simple Sequentially Rejective Multiple Test Procedure. *Scandinavian Journal of Statistics* 6(2), 65-70.
+- Lopez de Prado, M. (2018). *Advances in Financial Machine Learning*. Wiley.
+- Lopez de Prado, M. and Lewis, M. J. (2019). Detection of False Investment Strategies Using Unsupervised Learning Methods. *Quantitative Finance* 19(9), 1555-1565.
+- Mertens, E. (2002). Comments on the Correct Variance of Estimated Sharpe Ratios in Lo (2002) when Returns are IID. Working paper.
+- Politis, D. N. and Romano, J. P. (1994). The Stationary Bootstrap. *Journal of the American Statistical Association* 89(428), 1303-1313.
+- White, H. (2000). A Reality Check for Data Snooping. *Econometrica* 68(5), 1097-1126.

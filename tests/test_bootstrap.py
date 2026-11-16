@@ -107,3 +107,23 @@ def test_never_trading_strategies_are_ignored():
     a = bs.reality_check_and_spa(x, 200, 5.0, seed=3)
     b = bs.reality_check_and_spa(padded, 200, 5.0, seed=3)
     assert a.spa_consistent == b.spa_consistent and b.best_t_index == a.best_t_index + 3
+    assert a.spa_hac_consistent == b.spa_hac_consistent
+
+
+def test_long_run_scale_is_noisier_and_inflates_the_maximum():
+    """The E1 finding behind the default scale (see ``reality_check_and_spa``).
+
+    For white noise both scales estimate 1, but the long-run estimate is far noisier,
+    and the maximum over many strategies of mean/scale picks out the under-estimates.
+    """
+    extra = []
+    for seed in range(20):
+        x = np.random.default_rng(seed).standard_normal((1000, 400))
+        sd = x.std(axis=0, ddof=1)
+        omega = np.sqrt(bs.stationary_long_run_variance(x, 10.0))
+        if seed == 0:
+            assert omega.std() > 2.5 * sd.std()
+        t_plain = np.sqrt(1000) * x.mean(axis=0) / sd
+        t_long_run = np.sqrt(1000) * x.mean(axis=0) / omega
+        extra.append(t_long_run.max() - t_plain.max())
+    assert np.mean(extra) > 0.05  # the studentised maximum is biased upwards

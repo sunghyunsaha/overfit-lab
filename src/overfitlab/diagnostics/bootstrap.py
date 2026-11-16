@@ -95,12 +95,31 @@ class SnoopingResult:
     spa_lower: float  # Hansen SPA, lower bound  (most liberal)
     spa_consistent: float  # Hansen SPA, consistent (the one to quote)
     spa_upper: float  # Hansen SPA, upper bound  (most conservative)
+    spa_hac_consistent: float  # SPA studentised by the long-run s.d., as in Hansen (2005)
+    hac_scale_ratio: float  # long-run s.d. / sample s.d. of the long-run version's winner
     rc_stat: float
     spa_stat: float
     best_mean_index: int  # column with the highest mean return
     best_t_index: int  # column with the highest studentised mean
     n_boot: int
     mean_block: float
+
+
+def _spa_pvalues(dbar: np.ndarray, boot: np.ndarray, scale: np.ndarray, t: int) -> dict:
+    """SPA statistic and its three p-values for a given studentising scale."""
+    root_t = np.sqrt(t)
+    stat = max(float((root_t * dbar / scale).max()), 0.0)
+    threshold = -scale * np.sqrt(2.0 * np.log(np.log(t)) / t)
+    centres = {
+        "lower": np.maximum(dbar, 0.0),
+        "consistent": np.where(dbar >= threshold, dbar, 0.0),
+        "upper": dbar,
+    }
+    out = {"stat": stat, "argmax": int((dbar / scale).argmax())}
+    for name, g in centres.items():
+        stat_boot = np.maximum((root_t * (boot - g) / scale).max(axis=1), 0.0)
+        out[name] = float(np.mean(stat_boot > stat))
+    return out
 
 
 def reality_check_and_spa(
@@ -116,25 +135,41 @@ def reality_check_and_spa(
         V*_b = max_k sqrt(T) * (dbar*_{k,b} - dbar_k)
         p   = fraction of V*_b > V
 
-    SPA (Hansen 2005) improves on it in two ways. (1) It studentises by omega_k, so one
-    very volatile strategy cannot dominate the maximum. (2) It re-centres the bootstrap
-    distribution with g(dbar_k) instead of dbar_k, so that strategies that are clearly
-    bad do not inflate the null distribution (the Reality Check's known weakness):
-        T_SPA = max( max_k sqrt(T) * dbar_k / omega_k , 0 )
-        T*_b  = max( max_k sqrt(T) * (dbar*_{k,b} - g(dbar_k)) / omega_k , 0 )
+    SPA (Hansen 2005) improves on it in two ways. (1) It studentises by a scale s_k, so
+    one very volatile strategy cannot dominate the maximum. (2) It re-centres the
+    bootstrap distribution with g(dbar_k) instead of dbar_k, so that strategies that are
+    clearly bad do not inflate the null distribution (the Reality Check's known weakness):
+        T_SPA = max( max_k sqrt(T) * dbar_k / s_k , 0 )
+        T*_b  = max( max_k sqrt(T) * (dbar*_{k,b} - g(dbar_k)) / s_k , 0 )
         lower:      g_l(d) = max(d, 0)
-        consistent: g_c(d) = d * 1{ d >= -omega_k * sqrt(2 ln ln T / T) }
+        consistent: g_c(d) = d * 1{ d >= -s_k * sqrt(2 ln ln T / T) }
         upper:      g_u(d) = d
         p = fraction of T*_b > T_SPA
 
-    The same bootstrap resamples are used for all four p-values. Columns with zero
-    variance (strategies that never trade) are ignored.
+    DEVIATION FROM THE PAPER, found by experiment E1. Hansen studentises with the
+    long-run standard deviation omega_k (``stationary_long_run_variance``). Here the
+    default scale is the plain sample standard deviation of each strategy, and the
+    omega-studentised p-value is reported separately as ``spa_hac_consistent``. Reason:
+    omega_k adds up more than a hundred noisy sample autocovariances, so it is a much
+    noisier estimate than the sample standard deviation (about three times noisier for
+    white noise at the default block length). The statistic takes a MAXIMUM over
+    thousands of ratios dbar_k / omega_k, and a maximum seeks out the strategies whose
+    omega_k happens to be too small. The bootstrap holds omega_k fixed, so its null
+    distribution does not contain that extra source of extreme values, and the test
+    rejects too often (the measured rates, and how far below the sample standard
+    deviation omega_k was for the winners, are in REPORT section 5.1).
+    Under H0 strategy returns are uncorrelated, so both scales estimate the same
+    quantity, and the block bootstrap still accounts for time dependence in the null
+    distribution whichever scale is used.
+
+    The same bootstrap resamples are used for all p-values. Columns with zero variance
+    (strategies that never trade) are ignored.
     """
     x = np.asarray(returns, dtype=float)
     live = x.std(axis=0) > 0
     cols = np.flatnonzero(live)
     if len(cols) == 0:
-        return SnoopingResult(1.0, 1.0, 1.0, 1.0, 0.0, 0.0, -1, -1, n_boot, mean_block)
+        return SnoopingResult(1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, -1, -1, n_boot, mean_block)
     x = x[:, cols]
     t = x.shape[0]
     root_t = np.sqrt(t)
@@ -145,27 +180,21 @@ def reality_check_and_spa(
     rc_boot = root_t * (boot - dbar).max(axis=1)
     rc_p = float(np.mean(rc_boot > rc_stat))
 
+    sd = x.std(axis=0, ddof=1)
+    spa = _spa_pvalues(dbar, boot, sd, t)
     omega = np.sqrt(stationary_long_run_variance(x, mean_block))
-    spa_stat = max(float((root_t * dbar / omega).max()), 0.0)
-    threshold = -omega * np.sqrt(2.0 * np.log(np.log(t)) / t)
-    centres = {
-        "lower": np.maximum(dbar, 0.0),
-        "consistent": np.where(dbar >= threshold, dbar, 0.0),
-        "upper": dbar,
-    }
-    spa_p = {}
-    for name, g in centres.items():
-        stat_boot = np.maximum((root_t * (boot - g) / omega).max(axis=1), 0.0)
-        spa_p[name] = float(np.mean(stat_boot > spa_stat))
+    spa_hac = _spa_pvalues(dbar, boot, omega, t)
     return SnoopingResult(
         rc_pvalue=rc_p,
-        spa_lower=spa_p["lower"],
-        spa_consistent=spa_p["consistent"],
-        spa_upper=spa_p["upper"],
+        spa_lower=spa["lower"],
+        spa_consistent=spa["consistent"],
+        spa_upper=spa["upper"],
+        spa_hac_consistent=spa_hac["consistent"],
+        hac_scale_ratio=float(omega[spa_hac["argmax"]] / sd[spa_hac["argmax"]]),
         rc_stat=float(rc_stat),
-        spa_stat=spa_stat,
+        spa_stat=spa["stat"],
         best_mean_index=int(cols[dbar.argmax()]),
-        best_t_index=int(cols[(dbar / omega).argmax()]),
+        best_t_index=int(cols[spa["argmax"]]),
         n_boot=n_boot,
         mean_block=mean_block,
     )

@@ -1,0 +1,98 @@
+# Overfit Lab: how many backtests survive honest testing?
+
+**Headline.** Of {{e3.n_variants:,}} trading-strategy variants backtested on {{e3.n_assets}} crypto assets ({{e3.data.start}} to {{e3.data.end}}, net of costs), {{e3.net.survivors.naive:,}} look significant when tested one at a time at 5%, {{e3.net.survivors.bh:,}} survive Benjamini-Hochberg, and **{{e3.net.survivors.holm:,}} survive Holm**.
+The best variant has an annualised Sharpe ratio of {{e3.net.sharpe.best_annual:.2f}}, but luck alone is expected to produce {{e3.net.dsr_primary.sr0_annual:.2f}}: its **Deflated Sharpe Ratio is {{e3.net.dsr_primary.dsr:.2f}}** (0.95 needed), Hansen's SPA p-value is {{e3.net.snooping.spa_p:.2f}}, and the **Probability of Backtest Overfitting is {{e3.net.pbo.pbo:.2f}}**.
+Measured against simply holding each coin, {{e3.vs_buy_hold.survivors.naive:,}} variants are significant even before any correction. Data: {{e3.data.label}}.
+
+> {{e3.verdict.overall}}
+
+![Survival funnel and PBO logit distribution](reports/figures/e3_key_figure.png)
+
+*Left: how many of the {{e3.n_variants:,}} variants are still significant after each multiple-testing correction. Right: the CSCV logit distribution; mass to the left of zero means the in-sample winner ended up in the bottom half out of sample.*
+
+## The question
+
+If you search thousands of trading-strategy variants on historical data and pick the best one, how much of its performance is real and how much is selection luck?
+
+This repository is a small research framework that answers the question end to end:
+
+1. generate a large family of strategies (five rule families, a volatility-target overlay, {{e3.n_variants:,}} variants);
+2. backtest them with a hand-written vectorised backtester (next-bar execution, fees, volatility-dependent slippage);
+3. put every variant's daily returns in one T x N matrix;
+4. run the modern overfitting diagnostics on that matrix and count what survives.
+
+Every number in this file and in [REPORT.md](REPORT.md) is written by the pipeline from `reports/results/*.json`; none is typed by hand.
+
+## Results at a glance
+
+| Experiment | Question | Result |
+|---|---|---|
+| **E1** Null world | On synthetic data with no signal, do the tools stay quiet? | Naively, {{e1.full.gross.survivors.naive:,}} of {{e1.full.gross.n_variants:,}} skill-less variants ({{e1.full.gross.survivors.naive_frac:.1%}}) look significant. After Holm: {{e1.full.gross.survivors.holm}}. After Benjamini-Hochberg: {{e1.full.gross.survivors.bh}}. Over {{e1.mc.garch.n_worlds}} fat-tailed null worlds, Holm made a false discovery in {{e1.mc.garch.rates.any_holm.rate:.1%}} of them, SPA rejected in {{e1.mc.garch.rates.spa.rate:.1%}} and the DSR passed in {{e1.mc.garch.rates.dsr_max_matching.rate:.1%}} (nominal level 5%). |
+| **E2** Power | How strong must a real signal be to be detected? | {{e2.summary.sentence}} |
+| **E3** Real data | What survives on crypto? | {{e3.net.survivors.holm:,}} of {{e3.n_variants:,}} after Holm; PBO {{e3.net.pbo.pbo:.2f}}; DSR of the best {{e3.net.dsr_primary.dsr:.2f}}; walk-forward Sharpe {{e3.net.walkforward.oos_annual:.2f}} against {{e3.net.walkforward.mean_is_annual:.2f}} in the selection windows. |
+| **E4** Costs | Does the conclusion depend on fees (0 to 30 bps)? | Holm survivors range from {{e4.summary.holm_min}} to {{e4.summary.holm_max}}; the best net Sharpe falls from {{e4.summary.best_at_min_fee:.2f}} to {{e4.summary.best_at_max_fee:.2f}}. |
+| **E5** Robustness | Does it depend on folds, embargo, period, block length? | PBO stays between {{e5.ranges.pbo_min:.2f}} and {{e5.ranges.pbo_max:.2f}} for 6 to 16 CSCV blocks; the SPA p-value stays between {{e5.ranges.spa_p_min:.2f}} and {{e5.ranges.spa_p_max:.2f}} across block lengths; no sub-period has more than {{e5.ranges.subperiod_holm_max}} Holm survivors. |
+
+One finding came from validating the tools rather than from the data: plugging the in-sample skewness into the Probabilistic Sharpe Ratio and applying Bonferroni produced false discoveries in {{e1.mc.gbm.rates.any_bonferroni_psr.rate:.0%}} of Gaussian null worlds (5% allowed). The cause and the fix are described in [REPORT.md](REPORT.md) section 5.1 and [DECISIONS.md](DECISIONS.md).
+
+## Data used
+
+**E3, E4 and E5 use: {{e3.data.label}}.**
+
+- The primary source in the spec is Binance spot OHLCV from `data.binance.vision`. The machine this repository was built on could not reach that host, so the committed results use the fallback: real daily prices from the CoinMetrics community dataset (one reference price per day, no intraday high or low). Sample: {{e3.data.n_bars:,}} daily bars per asset, {{e3.data.start}} to {{e3.data.end}}.
+- Binance data is a one-command drop-in: `make data && make all`. `make all` uses the Binance cache if it exists, otherwise the CoinMetrics cache, otherwise a synthetic stand-in, and prints which one it used. The source is also recorded in `reports/results/e3.json` and in this section.
+- **E1 and E2 are synthetic by design** (they need a known ground truth).
+
+## How to reproduce
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+make install          # pinned dependencies (tested on Python 3.13)
+make test             # full test suite
+make demo             # under 2 minutes, small synthetic sample -> reports/demo/
+make data             # Binance OHLCV -> data/   (or: make data-fallback for CoinMetrics)
+make all              # E1-E5, figures, README.md and REPORT.md re-rendered from results
+```
+
+Runs are driven by YAML (`configs/base.yaml` plus an override file) and a fixed seed, so the same config gives the same numbers. `make figures` redraws every figure from saved results without recomputing, and `make docs` re-renders the documents.
+
+## Repository map
+
+```
+configs/                 base.yaml (every knob), full.yaml, demo.yaml
+src/overfitlab/
+  data/                  synthetic.py (GBM, GARCH, planted signal), binance.py, coinmetrics.py, loader.py
+  backtest/              indicators.py, strategies.py, engine.py (the backtester), universe.py (T x N matrix)
+  diagnostics/           sharpe.py (PSR, DSR, MinTRL, MinBTL), trials.py (effective N), pbo.py (CSCV),
+                         cv.py (purged k-fold, CPCV), bootstrap.py (Reality Check, SPA),
+                         multiple.py (Bonferroni, Holm, BH, BY, haircut), walkforward.py
+  experiments/           common.py (the diagnostic pipeline), e1_null.py ... e5_robustness.py
+  reporting/             figures.py, render.py (templates -> documents)
+  cli.py                 python -m overfitlab.cli <download|e1..e5|all|figures|docs>
+tests/                   lookahead, hand-calculated backtest, paper numbers, purging, brute-force PBO, ...
+docs/templates/          README / REPORT / INTERVIEW_PREP templates with placeholders for pipeline numbers
+reports/results/         one JSON per experiment (the single source of every reported number)
+reports/figures/         all figures
+```
+
+## Documents
+
+| File | What it is |
+|---|---|
+| [REPORT.md](REPORT.md) | Paper-style write-up: data, methods with equations, experiments, results, limitations, references |
+| [LEARNING.md](LEARNING.md) | Study guide for every module: plain language, maths, code walkthrough, common mistakes, interview questions, self-quiz |
+| [INTERVIEW_PREP.md](INTERVIEW_PREP.md) | Two-minute summary, the 15 hardest questions with answers, weakest points |
+| [DECISIONS.md](DECISIONS.md) | Every non-obvious design choice, the alternatives, and why |
+| [LIMITATIONS.md](LIMITATIONS.md) | What this project does not show |
+| [NEXT_STEPS.md](NEXT_STEPS.md) | Unfinished items, known issues, extensions |
+
+## Tests that matter
+
+- **Lookahead:** replacing all data after bar t leaves every signal, position and return up to t bit-for-bit unchanged, for all 500 variants per asset (`tests/test_lookahead.py`).
+- **Backtester:** a five-bar example worked out by hand (`tests/test_engine.py`).
+- **PSR / DSR / MinBTL:** the worked example of Bailey and Lopez de Prado (2014) (SR0 = 0.1132, DSR = 0.9004) and the "45 trials for 5 years" example of Bailey et al. (2014) (`tests/test_sharpe.py`).
+- **PBO:** equality with an independent brute-force implementation, plus known-answer cases (`tests/test_pbo.py`).
+- **Purging and embargo:** brute-force check that no training observation overlaps a test label window (`tests/test_cv.py`).
+- **Reality Check / SPA:** size under the null, power, and the closed-form variance against the bootstrap variance (`tests/test_bootstrap.py`).
+- **Multiple testing:** agreement with `statsmodels` (`tests/test_multiple.py`).
+- **Documents:** the committed README and REPORT equal the templates rendered from the committed results (`tests/test_docs.py`).

@@ -1,0 +1,570 @@
+{
+  "data": {
+    "source": "coinmetrics",
+    "label": "REAL - CoinMetrics community daily reference prices (close-only)",
+    "is_real": true,
+    "interval": "1d",
+    "symbols": [
+      "BTC",
+      "ETH",
+      "BNB",
+      "XRP",
+      "ADA",
+      "LTC",
+      "TRX",
+      "XLM",
+      "ETC",
+      "NEO"
+    ],
+    "start": "2018-07-01",
+    "end": "2026-05-23",
+    "n_bars": 2884,
+    "validation_counts": {
+      "duplicates": 0,
+      "bad_prices": 0,
+      "gaps": 0,
+      "ohlc_inconsistent": 0,
+      "zero_volume": 0,
+      "outliers": 26
+    }
+  },
+  "fees_bps": [
+    0,
+    5,
+    10,
+    15,
+    20,
+    30
+  ],
+  "levels": [
+    {
+      "n_obs": 2884,
+      "years": 7.901369863013699,
+      "n_variants": 5000,
+      "n_never_traded": 16,
+      "alpha": 0.05,
+      "sharpe": {
+        "best_annual": 1.4281668336835358,
+        "best_index": 1004,
+        "median_annual": 0.25362541511040965,
+        "mean_annual": 0.21978402748284748,
+        "cross_sectional_std_annual": 0.5073264523514796,
+        "frac_positive": 0.6904093097913323
+      },
+      "best": {
+        "skew": 4.216588671184336,
+        "kurt": 83.94767842651427,
+        "psr0": 0.9999963656447348,
+        "p_value": 2.9875538245408382e-05,
+        "min_trl_years": 1.0648087738095289
+      },
+      "survivors": {
+        "naive": 1211,
+        "bonferroni": 0,
+        "holm": 0,
+        "bh": 333,
+        "by": 0,
+        "naive_frac": 0.2422
+      },
+      "survivors_psr": {
+        "naive": 1279,
+        "bonferroni": 4,
+        "holm": 4,
+        "bh": 477,
+        "by": 0
+      },
+      "neff": {
+        "raw": 4984.0,
+        "max_matching": 589.4164567971766,
+        "sim_expected_max": 3.1016478850331484
+      },
+      "dsr": {
+        "raw": {
+          "dsr": 0.08239160776963517,
+          "sr0_annual": 1.8704550357272847,
+          "n_trials": 4984.0
+        },
+        "max_matching": {
+          "dsr": 0.32397168530060516,
+          "sr0_annual": 1.5735480179573411,
+          "n_trials": 589.4164567971766
+        }
+      },
+      "dsr_primary": {
+        "method": "max_matching",
+        "dsr": 0.32397168530060516,
+        "sr0_annual": 1.5735480179573411,
+        "n_trials": 589.4164567971766
+      },
+      "dsr_null_dispersion": {
+        "dsr": 0.8459882299848618,
+        "sr0_annual": 1.1036124825402673
+      },
+      "snooping": {
+        "rc_p": 0.215,
+        "spa_lower_p": 0.105,
+        "spa_p": 0.109,
+        "spa_upper_p": 0.11,
+        "spa_hac_p": 0.155,
+        "best_t_index": 1004,
+        "n_boot": 1000,
+        "mean_block": 10
+      },
+      "pbo": {
+        "pbo": 0.25726495726495724,
+        "n_blocks": 16,
+        "n_splits": 12870,
+        "prob_oos_loss": 0.14988344988344987,
+        "degradation_slope": -0.7437308708597984,
+        "median_logit": 0.7873523557445774,
+        "mean_is_annual": 1.8311844374994088,
+        "mean_oos_annual": 0.46433979449357193
+      },
+      "fee_bps": 0
+    },
+    {
+      "n_obs": 2884,
+      "years": 7.901369863013699,
+      "n_variants": 5000,
+      "n_never_traded": 16,
+      "alpha": 0.05,
+      "sharpe": {
+        "best_annual": 1.4199199919283687,
+        "best_index": 1004,
+        "median_annual": 0.24139518810295885,
+        "mean_annual": 0.20454456087160564,
+        "cross_sectional_std_annual": 0.5086536961127279,
+        "frac_positive": 0.6821829855537721
+      },
+      "best": {
+        "skew": 4.2177046463207235,
+        "kurt": 83.96035875220782,
+        "psr0": 0.9999958750137635,
+        "p_value": 3.2951178896268564e-05,
+        "min_trl_years": 1.0777454967085651
+      },
+      "survivors": {
+        "naive": 1172,
+        "bonferroni": 0,
+        "holm": 0,
+        "bh": 288,
+        "by": 0,
+        "naive_frac": 0.2344
+      },
+      "survivors_psr": {
+        "naive": 1224,
+        "bonferroni": 1,
+        "holm": 1,
+        "bh": 413,
+        "by": 0
+      },
+      "neff": {
+        "raw": 4984.0,
+        "max_matching": 589.4450644057772,
+        "sim_expected_max": 3.101662276546109
+      },
+      "dsr": {
+        "raw": {
+          "dsr": 0.07635001160253298,
+          "sr0_annual": 1.875348432800033,
+          "n_trials": 4984.0
+        },
+        "max_matching": {
+          "dsr": 0.3101779294693307,
+          "sr0_annual": 1.5776719810585969,
+          "n_trials": 589.4450644057772
+        }
+      },
+      "dsr_primary": {
+        "method": "max_matching",
+        "dsr": 0.3101779294693307,
+        "sr0_annual": 1.5776719810585969,
+        "n_trials": 589.4450644057772
+      },
+      "dsr_null_dispersion": {
+        "dsr": 0.83969354736996,
+        "sr0_annual": 1.1036176032547798
+      },
+      "snooping": {
+        "rc_p": 0.233,
+        "spa_lower_p": 0.108,
+        "spa_p": 0.113,
+        "spa_upper_p": 0.115,
+        "spa_hac_p": 0.22,
+        "best_t_index": 1004,
+        "n_boot": 1000,
+        "mean_block": 10
+      },
+      "pbo": {
+        "pbo": 0.26565656565656565,
+        "n_blocks": 16,
+        "n_splits": 12870,
+        "prob_oos_loss": 0.15998445998445998,
+        "degradation_slope": -0.7627143295193093,
+        "median_logit": 0.7513101496223245,
+        "mean_is_annual": 1.8143223524070444,
+        "mean_oos_annual": 0.4414064148272885
+      },
+      "fee_bps": 5
+    },
+    {
+      "n_obs": 2884,
+      "years": 7.901369863013699,
+      "n_variants": 5000,
+      "n_never_traded": 16,
+      "alpha": 0.05,
+      "sharpe": {
+        "best_annual": 1.4116641471743592,
+        "best_index": 1004,
+        "median_annual": 0.2291624214136075,
+        "mean_annual": 0.18930429501325735,
+        "cross_sectional_std_annual": 0.5103625298584591,
+        "frac_positive": 0.6731540930979133
+      },
+      "best": {
+        "skew": 4.218743765199458,
+        "kurt": 83.97099101833561,
+        "psr0": 0.9999953204422584,
+        "p_value": 3.632870343551688e-05,
+        "min_trl_years": 1.0909426920089966
+      },
+      "survivors": {
+        "naive": 1133,
+        "bonferroni": 0,
+        "holm": 0,
+        "bh": 199,
+        "by": 0,
+        "naive_frac": 0.2266
+      },
+      "survivors_psr": {
+        "naive": 1189,
+        "bonferroni": 1,
+        "holm": 1,
+        "bh": 366,
+        "by": 0
+      },
+      "neff": {
+        "raw": 4984.0,
+        "max_matching": 589.5366544625737,
+        "sim_expected_max": 3.1017083472982017
+      },
+      "dsr": {
+        "raw": {
+          "dsr": 0.07005679818165753,
+          "sr0_annual": 1.8816487088256741,
+          "n_trials": 4984.0
+        },
+        "max_matching": {
+          "dsr": 0.2953432828180783,
+          "sr0_annual": 1.5829957190102095,
+          "n_trials": 589.5366544625737
+        }
+      },
+      "dsr_primary": {
+        "method": "max_matching",
+        "dsr": 0.2953432828180783,
+        "sr0_annual": 1.5829957190102095,
+        "n_trials": 589.5366544625737
+      },
+      "dsr_null_dispersion": {
+        "dsr": 0.8332188354285015,
+        "sr0_annual": 1.1036339959140924
+      },
+      "snooping": {
+        "rc_p": 0.253,
+        "spa_lower_p": 0.114,
+        "spa_p": 0.118,
+        "spa_upper_p": 0.12,
+        "spa_hac_p": 0.257,
+        "best_t_index": 1004,
+        "n_boot": 1000,
+        "mean_block": 10
+      },
+      "pbo": {
+        "pbo": 0.27195027195027194,
+        "n_blocks": 16,
+        "n_splits": 12870,
+        "prob_oos_loss": 0.16783216783216784,
+        "degradation_slope": -0.7780106824639358,
+        "median_logit": 0.7275397105197012,
+        "mean_is_annual": 1.7991177988811011,
+        "mean_oos_annual": 0.41958535395717417
+      },
+      "fee_bps": 10
+    },
+    {
+      "n_obs": 2884,
+      "years": 7.901369863013699,
+      "n_variants": 5000,
+      "n_never_traded": 16,
+      "alpha": 0.05,
+      "sharpe": {
+        "best_annual": 1.4033994517609838,
+        "best_index": 1004,
+        "median_annual": 0.21825254311109357,
+        "mean_annual": 0.17406454485960643,
+        "cross_sectional_std_annual": 0.5124486727889823,
+        "frac_positive": 0.6625200642054575
+      },
+      "best": {
+        "skew": 4.219705452673359,
+        "kurt": 83.9795742482643,
+        "psr0": 0.9999946939551096,
+        "p_value": 4.003604377327815e-05,
+        "min_trl_years": 1.1044070045202872
+      },
+      "survivors": {
+        "naive": 1086,
+        "bonferroni": 0,
+        "holm": 0,
+        "bh": 161,
+        "by": 0,
+        "naive_frac": 0.2172
+      },
+      "survivors_psr": {
+        "naive": 1142,
+        "bonferroni": 1,
+        "holm": 1,
+        "bh": 311,
+        "by": 0
+      },
+      "neff": {
+        "raw": 4984.0,
+        "max_matching": 589.6794943248731,
+        "sim_expected_max": 3.1017801817763413
+      },
+      "dsr": {
+        "raw": {
+          "dsr": 0.06362517580929318,
+          "sr0_annual": 1.8893400809817247,
+          "n_trials": 4984.0
+        },
+        "max_matching": {
+          "dsr": 0.279592628959327,
+          "sr0_annual": 1.5895031374344515,
+          "n_trials": 589.6794943248731
+        }
+      },
+      "dsr_primary": {
+        "method": "max_matching",
+        "dsr": 0.279592628959327,
+        "sr0_annual": 1.5895031374344515,
+        "n_trials": 589.6794943248731
+      },
+      "dsr_null_dispersion": {
+        "dsr": 0.8265651535666625,
+        "sr0_annual": 1.1036595556906001
+      },
+      "snooping": {
+        "rc_p": 0.265,
+        "spa_lower_p": 0.115,
+        "spa_p": 0.12,
+        "spa_upper_p": 0.122,
+        "spa_hac_p": 0.284,
+        "best_t_index": 1004,
+        "n_boot": 1000,
+        "mean_block": 10
+      },
+      "pbo": {
+        "pbo": 0.2756021756021756,
+        "n_blocks": 16,
+        "n_splits": 12870,
+        "prob_oos_loss": 0.17536907536907537,
+        "degradation_slope": -0.7901124833667513,
+        "median_logit": 0.709388139042375,
+        "mean_is_annual": 1.7850354058781293,
+        "mean_oos_annual": 0.40215062377415006
+      },
+      "fee_bps": 15
+    },
+    {
+      "n_obs": 2884,
+      "years": 7.901369863013699,
+      "n_variants": 5000,
+      "n_never_traded": 16,
+      "alpha": 0.05,
+      "sharpe": {
+        "best_annual": 1.395126058526758,
+        "best_index": 1004,
+        "median_annual": 0.20473062403714373,
+        "mean_annual": 0.1588266231790418,
+        "cross_sectional_std_annual": 0.5149067419797201,
+        "frac_positive": 0.6558988764044944
+      },
+      "best": {
+        "skew": 4.220589140696572,
+        "kurt": 83.98610772130549,
+        "psr0": 0.9999939866363338,
+        "p_value": 4.410352851541157e-05,
+        "min_trl_years": 1.1181452825340221
+      },
+      "survivors": {
+        "naive": 1035,
+        "bonferroni": 0,
+        "holm": 0,
+        "bh": 0,
+        "by": 0,
+        "naive_frac": 0.207
+      },
+      "survivors_psr": {
+        "naive": 1105,
+        "bonferroni": 1,
+        "holm": 1,
+        "bh": 281,
+        "by": 0
+      },
+      "neff": {
+        "raw": 4984.0,
+        "max_matching": 589.884405351732,
+        "sim_expected_max": 3.1018831990973528
+      },
+      "dsr": {
+        "raw": {
+          "dsr": 0.057168887536198185,
+          "sr0_annual": 1.8984027030363622,
+          "n_trials": 4984.0
+        },
+        "max_matching": {
+          "dsr": 0.2630629935727531,
+          "sr0_annual": 1.5971805720488532,
+          "n_trials": 589.884405351732
+        }
+      },
+      "dsr_primary": {
+        "method": "max_matching",
+        "dsr": 0.2630629935727531,
+        "sr0_annual": 1.5971805720488532,
+        "n_trials": 589.884405351732
+      },
+      "dsr_null_dispersion": {
+        "dsr": 0.8197306713512544,
+        "sr0_annual": 1.1036962107867345
+      },
+      "snooping": {
+        "rc_p": 0.284,
+        "spa_lower_p": 0.12,
+        "spa_p": 0.126,
+        "spa_upper_p": 0.128,
+        "spa_hac_p": 0.314,
+        "best_t_index": 1004,
+        "n_boot": 1000,
+        "mean_block": 10
+      },
+      "pbo": {
+        "pbo": 0.2818958818958819,
+        "n_blocks": 16,
+        "n_splits": 12870,
+        "prob_oos_loss": 0.1874125874125874,
+        "degradation_slope": -0.8001505661418974,
+        "median_logit": 0.6850596720479264,
+        "mean_is_annual": 1.7717924352423624,
+        "mean_oos_annual": 0.3831822080567507
+      },
+      "fee_bps": 20
+    },
+    {
+      "n_obs": 2884,
+      "years": 7.901369863013699,
+      "n_variants": 5000,
+      "n_never_traded": 16,
+      "alpha": 0.05,
+      "sharpe": {
+        "best_annual": 1.3785537923624318,
+        "best_index": 1004,
+        "median_annual": 0.17738203100177888,
+        "mean_annual": 0.12836149873783334,
+        "cross_sectional_std_annual": 0.5209120072634644,
+        "frac_positive": 0.6326243980738363
+      },
+      "best": {
+        "skew": 4.222120282368448,
+        "kurt": 83.99302379513331,
+        "psr0": 0.9999922885060565,
+        "p_value": 5.345335648349604e-05,
+        "min_trl_years": 1.146472190477517
+      },
+      "survivors": {
+        "naive": 964,
+        "bonferroni": 0,
+        "holm": 0,
+        "bh": 0,
+        "by": 0,
+        "naive_frac": 0.1928
+      },
+      "survivors_psr": {
+        "naive": 1013,
+        "bonferroni": 1,
+        "holm": 1,
+        "bh": 203,
+        "by": 0
+      },
+      "neff": {
+        "raw": 4984.0,
+        "max_matching": 590.5497893119943,
+        "sim_expected_max": 3.102217448481212
+      },
+      "dsr": {
+        "raw": {
+          "dsr": 0.04461728785071347,
+          "sr0_annual": 1.9205434343914778,
+          "n_trials": 4984.0
+        },
+        "max_matching": {
+          "dsr": 0.22829458970176825,
+          "sr0_annual": 1.6159823180560928,
+          "n_trials": 590.5497893119943
+        }
+      },
+      "dsr_primary": {
+        "method": "max_matching",
+        "dsr": 0.22829458970176825,
+        "sr0_annual": 1.6159823180560928,
+        "n_trials": 590.5497893119943
+      },
+      "dsr_null_dispersion": {
+        "dsr": 0.8055086379771221,
+        "sr0_annual": 1.1038151416924906
+      },
+      "snooping": {
+        "rc_p": 0.324,
+        "spa_lower_p": 0.133,
+        "spa_p": 0.143,
+        "spa_upper_p": 0.145,
+        "spa_hac_p": 0.334,
+        "best_t_index": 1004,
+        "n_boot": 1000,
+        "mean_block": 10
+      },
+      "pbo": {
+        "pbo": 0.2896658896658897,
+        "n_blocks": 16,
+        "n_splits": 12870,
+        "prob_oos_loss": 0.2097902097902098,
+        "degradation_slope": -0.8272225679494536,
+        "median_logit": 0.6693952558901197,
+        "mean_is_annual": 1.747371019844182,
+        "mean_oos_annual": 0.3531072634052193
+      },
+      "fee_bps": 30
+    }
+  ],
+  "summary": {
+    "holm_min": 0,
+    "holm_max": 0,
+    "bh_at_min_fee": 333,
+    "bh_at_max_fee": 0,
+    "naive_at_min_fee": 1211,
+    "naive_at_max_fee": 964,
+    "best_at_min_fee": 1.4281668336835358,
+    "best_at_max_fee": 1.3785537923624318,
+    "median_at_min_fee": 0.25362541511040965,
+    "median_at_max_fee": 0.17738203100177888,
+    "dsr_max": 0.32397168530060516,
+    "spa_p_min": 0.109,
+    "min_fee": 0,
+    "max_fee": 30
+  },
+  "tables": {
+    "costs_md": "| Fee (bps per side) | Median Sharpe | Best Sharpe | Naive | BH | Holm | SPA p | DSR of best | PBO |\n|---|---|---|---|---|---|---|---|---|\n| 0 | 0.25 | 1.43 | 1,211 | 333 | 0 | 0.109 | 0.324 | 0.26 |\n| 5 | 0.24 | 1.42 | 1,172 | 288 | 0 | 0.113 | 0.310 | 0.27 |\n| 10 | 0.23 | 1.41 | 1,133 | 199 | 0 | 0.118 | 0.295 | 0.27 |\n| 15 | 0.22 | 1.40 | 1,086 | 161 | 0 | 0.120 | 0.280 | 0.28 |\n| 20 | 0.20 | 1.40 | 1,035 | 0 | 0 | 0.126 | 0.263 | 0.28 |\n| 30 | 0.18 | 1.38 | 964 | 0 | 0 | 0.143 | 0.228 | 0.29 |"
+  }
+}
