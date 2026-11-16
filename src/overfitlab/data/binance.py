@@ -113,7 +113,8 @@ def _fetch(url: str, retries: int = 3, timeout: float = 60.0) -> bytes | None:
             last = err
         except (urllib.error.URLError, TimeoutError, ConnectionError) as err:
             last = err
-        time.sleep(1.5 * (attempt + 1))
+        if attempt + 1 < retries:
+            time.sleep(1.5 * (attempt + 1))
     raise ConnectionError(f"could not fetch {url}: {last}")
 
 
@@ -186,8 +187,11 @@ def download_symbol(
             df.to_parquet(path)
         return df
 
+    # The first month is fetched on its own, so an unreachable host fails within seconds
+    # instead of after every worker has exhausted its retries.
+    first = load(months[0])
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        parts = [df for df in pool.map(load, months) if df is not None]
+        parts = [df for df in [first, *pool.map(load, months[1:])] if df is not None]
     if not parts:
         raise FileNotFoundError(f"no Binance data found for {symbol} {interval}")
     out = pd.concat(parts).sort_index()
