@@ -3,6 +3,7 @@
 Commands
 --------
 download      fetch market data into the local cache (``--source binance|coinmetrics``)
+check-data    pre-flight check of the Binance source for every configured symbol
 e1 .. e5      run one experiment (results JSON + figures)
 all           run e1..e5, then render the documents
 figures       redraw every figure from the results and arrays already on disk
@@ -61,7 +62,8 @@ def _draw_figures(name: str, cfg: dict) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="overfitlab", description=__doc__.splitlines()[0])
     parser.add_argument(
-        "command", choices=["download", "e1", "e2", "e3", "e4", "e5", "all", "figures", "docs"]
+        "command",
+        choices=["download", "check-data", "e1", "e2", "e3", "e4", "e5", "all", "figures", "docs"],
     )
     parser.add_argument(
         "--config", default=None, help="YAML file merged on top of configs/base.yaml"
@@ -70,6 +72,22 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(message)s")
     cfg = load_config(args.config)
+
+    if args.command == "check-data":
+        from overfitlab.data import binance
+
+        try:
+            rows = binance.check_source(cfg)
+        except (OSError, ValueError) as err:
+            print(f"Binance check failed: {err}", file=sys.stderr)
+            return 1
+        missing = [r["symbol"] for r in rows if not r["ok"]]
+        if missing:
+            print(f"no data at the start or end of the sample for: {', '.join(missing)}")
+            print(
+                "(the loader trims all assets to their common window, so this shortens the sample)"
+            )
+        return 0
 
     if args.command == "download":
         from overfitlab.data import binance, coinmetrics

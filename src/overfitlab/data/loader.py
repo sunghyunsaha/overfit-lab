@@ -199,8 +199,10 @@ def load_market(cfg: dict, *, seed_offset: int = 0) -> tuple[dict[str, pd.DataFr
             source = "coinmetrics"
     if frames is None:
         if source not in ("auto", "synthetic"):
+            target = "make data-hourly" if interval == "1h" else "make data"
             raise FileNotFoundError(
-                f"data.source={source!r} but the cache is incomplete; run `make data` first"
+                f"data.source={source!r} but the {interval} cache is incomplete; "
+                f"run `{target}` first"
             )
         source = "synthetic"
         bars_per_year = cfg["periods_per_year"] * BARS_PER_DAY[interval]
